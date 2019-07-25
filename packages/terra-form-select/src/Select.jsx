@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Variants from './_constants';
-import DropdownMenu from './_Menu';
-import Frame from './_Frame';
-import Option from './_Option';
-import OptGroup from './_OptGroup';
-import Tag from './_Tag';
-import Util from './_SelectUtil';
+import Variants from './shared/_variants';
+import Option from './shared/_Option';
+import OptGroup from './shared/_OptGroup';
+import Combobox from './combobox/Combobox';
+import Default from './default/Default';
+import Multiple from './multiple/Multiple';
+import Search from './search/Search';
+import Tag from './tag/Tag';
 
 const propTypes = {
   /**
@@ -125,130 +126,27 @@ const defaultProps = {
 };
 
 const contextTypes = {
-  /* eslint-disable consistent-return */
-  intl: (context) => {
-    if (context.intl === undefined) {
-      return new Error('Component is internationalized, and must be wrapped in terra-base');
-    }
-  },
+  intl: context => (context.intl
+    ? undefined
+    : new Error('Component is internationalized, and must be wrapped in terra-base')
+  ),
 };
 
-class Select extends React.Component {
-  constructor(props) {
-    super(props);
+function Select(props) {
+  const { variant } = props;
 
-    this.state = {
-      tags: [],
-      value: Util.defaultValue(props),
-    };
-
-    this.display = this.display.bind(this);
-    this.handleChange = this.handleChange.bind(this);
-    this.handleDeselect = this.handleDeselect.bind(this);
-    this.handleSelect = this.handleSelect.bind(this);
-  }
-
-  /**
-   * Returns the appropriate variant display
-   */
-  display() {
-    const selectValue = Util.value(this.props, this.state);
-
-    switch (this.props.variant) {
-      case Variants.TAG:
-      case Variants.MULTIPLE:
-        return selectValue.map(tag => (
-          <Tag value={tag} key={tag} onDeselect={this.handleDeselect}>
-            {Util.valueDisplay(this.props, tag)}
-          </Tag>
-        ));
-      default:
-        return Util.valueDisplay(this.props, selectValue);
-    }
-  }
-
-  /**
-   * Communicates changes to the value.
-   * @param {array|number|string} value - The value resulting from a change.
-   */
-  handleChange(value) {
-    if (this.props.value === undefined) {
-      this.setState({ value });
-    }
-
-    if (this.props.onChange) {
-      this.props.onChange(value);
-    }
-  }
-
-  /**
-   * Communicates the removal of a value from the selected options.
-   * @param {number|string} value - The value to be removed.
-   */
-  handleDeselect(value) {
-    this.handleChange(Util.deselect(this.props, this.state, value));
-
-    if (this.props.onDeselect) {
-      this.props.onDeselect(value);
-    }
-  }
-
-  /**
-   * Communicates the selection of a value.
-   * @param {number|string} value - The value of the selected option.
-   * @param {ReactNode} option - The selected option.
-   */
-  handleSelect(value, option) {
-    this.handleChange(Util.select(this.props, this.state, value));
-
-    // Add new tags for uncontrolled components.
-    if (this.props.value === undefined && !Util.findByValue(this.props, this.state, value)) {
-      this.setState(prevState => ({ tags: [...prevState.tags, <Option key={value} display={value} value={value} />] }));
-    }
-
-    if (this.props.onSelect) {
-      this.props.onSelect(value, option);
-    }
-  }
-
-  render() {
-    const { intl } = this.context;
-    const {
-      allowClear, children, defaultValue, onChange, placeholder, required, value, ...otherProps
-    } = this.props;
-
-    const defaultPlaceholder = intl.formatMessage({ id: 'Terra.form.select.defaultDisplay' });
-    const selectPlaceholder = placeholder === undefined ? defaultPlaceholder : placeholder;
-    let clearOptionDisplay;
-
-    if (allowClear) {
-      if (selectPlaceholder.length === 0) {
-        clearOptionDisplay = defaultPlaceholder;
-      } else {
-        clearOptionDisplay = selectPlaceholder;
-      }
-    }
-
-    return (
-      <Frame
-        {...otherProps}
-        data-terra-select
-        value={Util.value(this.props, this.state)}
-        display={this.display()}
-        onDeselect={this.handleDeselect}
-        onSelect={this.handleSelect}
-        placeholder={selectPlaceholder}
-        required={required}
-        totalOptions={Util.getTotalNumberOfOptions(children)}
-        clearOptionDisplay={clearOptionDisplay}
-        dropdown={dropdownProps => (
-          <DropdownMenu {...dropdownProps}>
-            {this.state.tags}
-            {children}
-          </DropdownMenu>
-        )}
-      />
-    );
+  switch (variant) {
+    case Variants.COMBOBOX:
+      return <Combobox {...props} />;
+    case Variants.MULTIPLE:
+      return <Multiple {...props} />;
+    case Variants.SEARCH:
+      return <Search {...props} />;
+    case Variants.TAG:
+      return <Tag {...props} />;
+    case Variants.DEFAULT:
+    default:
+      return <Default {...props} />;
   }
 }
 

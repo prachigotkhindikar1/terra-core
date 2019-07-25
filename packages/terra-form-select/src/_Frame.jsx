@@ -4,10 +4,11 @@ import classNames from 'classnames/bind';
 import { FormattedMessage, injectIntl, intlShape } from 'react-intl';
 import uniqueid from 'lodash.uniqueid';
 import KeyCode from 'keycode-js';
-import Variants from './_constants';
+import Variants from './shared/_variants';
 import Dropdown from './_Dropdown';
-import Util from './_FrameUtil';
-import SharedUtil from './_SharedUtil';
+import Menu from './_Menu';
+import Util from './shared/_FrameUtil';
+import SharedUtil from './shared/_SharedUtil';
 import styles from './_Frame.module.scss';
 
 const cx = classNames.bind(styles);
@@ -17,6 +18,10 @@ const propTypes = {
    * Used to define a string that labels the select component to screen readers.
    */
   ariaLabel: PropTypes.string,
+  /**
+   * The select options.
+   */
+  children: PropTypes.node,
   /**
    * Text for the clear option.
    */
@@ -29,10 +34,6 @@ const propTypes = {
    * The select display.
    */
   display: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
-  /**
-   * A render callback for dropdown content.
-   */
-  dropdown: PropTypes.func,
   /**
    * Additional attributes to spread onto the dropdown. ( Style, ClassNames, etc.. )
    */
@@ -115,7 +116,6 @@ const propTypes = {
 const defaultProps = {
   clearOptionDisplay: undefined,
   disabled: false,
-  dropdown: undefined,
   dropdownAttrs: undefined,
   isInvalid: false,
   maxSelectionCount: undefined,
@@ -663,9 +663,9 @@ class Frame extends React.Component {
   render() {
     const {
       clearOptionDisplay,
+      children,
       disabled,
       display,
-      dropdown,
       dropdownAttrs,
       isInvalid,
       maxHeight,
@@ -705,6 +705,21 @@ class Frame extends React.Component {
     const customAriaDescribedbyIds = customProps['aria-describedby'];
     const ariaDescribedBy = customAriaDescribedbyIds ? `${descriptionId} ${customAriaDescribedbyIds}` : descriptionId;
 
+    const menuProps = {
+      value,
+      variant,
+      onDeselect,
+      optionFilter,
+      noResultContent,
+      visuallyHiddenComponent: this.visuallyHiddenComponent,
+      onSelect: this.handleSelect,
+      onRequestClose: this.closeDropdown,
+      searchValue: this.state.searchValue,
+      input: this.input,
+      select: this.select,
+      maxSelectionCount,
+      clearOptionDisplay,
+    };
 
     return (
       <div
@@ -755,22 +770,9 @@ class Frame extends React.Component {
             refCallback={(ref) => { this.dropdown = ref; }}
             style={Util.dropdownStyle(dropdownAttrs, this.state)}
           >
-            {dropdown
-               && dropdown({
-                 value,
-                 variant,
-                 onDeselect,
-                 optionFilter,
-                 noResultContent,
-                 visuallyHiddenComponent: this.visuallyHiddenComponent,
-                 onSelect: this.handleSelect,
-                 onRequestClose: this.closeDropdown,
-                 searchValue: this.state.searchValue,
-                 input: this.input,
-                 select: this.select,
-                 maxSelectionCount,
-                 clearOptionDisplay,
-               })}
+            <Menu {...menuProps}>
+              {children}
+            </Menu>
           </Dropdown>
           )
         }
