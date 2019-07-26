@@ -1,9 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Frame from '../_Frame';
+import Frame from './Frame';
 import Option from '../shared/_Option';
-import OptGroup from '../shared/_OptGroup';
-import Util from '../shared/_SelectUtil';
+import SelectUtil from '../shared/_SelectUtil';
 
 const propTypes = {
   /**
@@ -18,7 +17,7 @@ const propTypes = {
   /**
    * The default selected value.
    */
-  defaultValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  defaultValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   /**
    * Whether the select is disabled.
    */
@@ -36,11 +35,6 @@ const propTypes = {
    * The max height of the dropdown.
    */
   maxHeight: PropTypes.number,
-  /**
-   * @private The maximum number of options that can be selected. A value less than 2 will be ignored.
-   * Only applicable to variants allowing multiple selections (e.g.; `multiple`; `tag`).
-   */
-  maxSelectionCount: PropTypes.number,
   /**
    * Content to display when no results are found.
    */
@@ -66,17 +60,9 @@ const propTypes = {
    */
   onFocus: PropTypes.func,
   /**
-   * Callback function triggered when the search criteria changes. function(searchValue)
-   */
-  onSearch: PropTypes.func,
-  /**
    * Callback function triggered when an option is selected. function(value)
    */
   onSelect: PropTypes.func,
-  /**
-   * Callback function invoked for each option on search change. function(searchValue, option)
-   */
-  optionFilter: PropTypes.func,
   /**
    * Placeholder text.
    */
@@ -98,25 +84,20 @@ const defaultProps = {
   disabled: false,
   dropdownAttrs: undefined,
   isInvalid: false,
-  maxSelectionCount: undefined,
   noResultContent: undefined,
   onChange: undefined,
   onDeselect: undefined,
-  onSearch: undefined,
   onSelect: undefined,
-  optionFilter: undefined,
   placeholder: undefined,
   required: false,
   value: undefined,
 };
 
 const contextTypes = {
-  /* eslint-disable consistent-return */
-  intl: (context) => {
-    if (context.intl === undefined) {
-      return new Error('Component is internationalized, and must be wrapped in terra-base');
-    }
-  },
+  intl: context => (context.intl === undefined
+    ? new Error('Component is internationalized, and must be wrapped in terra-base')
+    : undefined
+  ),
 };
 
 class DefaultSelect extends React.Component {
@@ -124,7 +105,7 @@ class DefaultSelect extends React.Component {
     super(props);
 
     this.state = {
-      value: Util.defaultValue(props),
+      value: SelectUtil.defaultValue(props),
     };
 
     this.display = this.display.bind(this);
@@ -137,9 +118,9 @@ class DefaultSelect extends React.Component {
    * Returns the appropriate variant display
    */
   display() {
-    const selectValue = Util.value(this.props, this.state);
+    const selectValue = SelectUtil.value(this.props, this.state);
 
-    return Util.valueDisplay(this.props, selectValue);
+    return SelectUtil.valueDisplay(this.props, selectValue);
   }
 
   /**
@@ -161,7 +142,7 @@ class DefaultSelect extends React.Component {
    * @param {number|string} value - The value to be removed.
    */
   handleDeselect(value) {
-    this.handleChange(Util.deselect(this.props, this.state, value));
+    this.handleChange(SelectUtil.deselect(this.props, this.state, value));
 
     if (this.props.onDeselect) {
       this.props.onDeselect(value);
@@ -174,10 +155,10 @@ class DefaultSelect extends React.Component {
    * @param {ReactNode} option - The selected option.
    */
   handleSelect(value, option) {
-    this.handleChange(Util.select(this.props, this.state, value));
+    this.handleChange(SelectUtil.select(this.props, this.state, value));
 
     // Add new tags for uncontrolled components.
-    if (this.props.value === undefined && !Util.findByValue(this.props, this.state, value)) {
+    if (this.props.value === undefined && !SelectUtil.findByValue(this.props, this.state, value)) {
       this.setState(prevState => ({ tags: [...prevState.tags, <Option key={value} display={value} value={value} />] }));
     }
 
@@ -189,7 +170,14 @@ class DefaultSelect extends React.Component {
   render() {
     const { intl } = this.context;
     const {
-      allowClear, children, defaultValue, onChange, placeholder, required, value, ...otherProps
+      allowClear,
+      children,
+      defaultValue,
+      onChange,
+      placeholder,
+      required,
+      value,
+      ...otherProps
     } = this.props;
 
     const defaultPlaceholder = intl.formatMessage({ id: 'Terra.form.select.defaultDisplay' });
@@ -208,13 +196,13 @@ class DefaultSelect extends React.Component {
       <Frame
         {...otherProps}
         data-terra-select
-        value={Util.value(this.props, this.state)}
+        value={SelectUtil.value(this.props, this.state)}
         display={this.display()}
         onDeselect={this.handleDeselect}
         onSelect={this.handleSelect}
         placeholder={selectPlaceholder}
         required={required}
-        totalOptions={Util.getTotalNumberOfOptions(children)}
+        totalOptions={SelectUtil.getTotalNumberOfOptions(children)}
         clearOptionDisplay={clearOptionDisplay}
       >
         {children}
@@ -223,8 +211,6 @@ class DefaultSelect extends React.Component {
   }
 }
 
-DefaultSelect.Option = Option;
-DefaultSelect.OptGroup = OptGroup;
 DefaultSelect.propTypes = propTypes;
 DefaultSelect.defaultProps = defaultProps;
 DefaultSelect.contextTypes = contextTypes;

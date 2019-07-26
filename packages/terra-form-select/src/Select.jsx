@@ -145,8 +145,16 @@ function Select(props) {
     case Variants.TAG:
       return <Tag {...props} />;
     case Variants.DEFAULT:
-    default:
-      return <Default {...props} />;
+    default: {
+      const {
+        maxSelectionCount,
+        onSearch,
+        optionFilter,
+        variant: v,
+        ...defaultSelectProps
+      } = props;
+      return <Default {...defaultSelectProps} />;
+    }
   }
 }
 

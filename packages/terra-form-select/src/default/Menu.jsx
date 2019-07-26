@@ -3,14 +3,14 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
 import { polyfill } from 'react-lifecycles-compat';
 import { injectIntl, intlShape } from 'react-intl';
-import Variants from './shared/_variants';
-import AddOption from './shared/_AddOption';
-import ClearOption from './shared/_ClearOption';
-import MaxSelection from './shared/_MaxSelection';
-import NoResults from './shared/_NoResults';
-import MenuUtil from './shared/_MenuUtil';
-import SharedUtil from './shared/_SharedUtil';
-import styles from './_Menu.module.scss';
+import Variants from '../shared/_variants';
+import AddOption from '../shared/_AddOption';
+import ClearOption from '../shared/_ClearOption';
+import MaxSelection from '../shared/_MaxSelection';
+import NoResults from '../shared/_NoResults';
+import MenuUtil from '../shared/_MenuUtil';
+import SharedUtil from '../shared/_SharedUtil';
+import styles from './Menu.module.scss';
 
 const cx = classNames.bind(styles);
 

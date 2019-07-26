@@ -13,12 +13,10 @@ const propTypes = {
 };
 
 const contextTypes = {
-  /* eslint-disable consistent-return */
-  intl: (context) => {
-    if (context.intl === undefined) {
-      return new Error('Component is internationalized, and must be wrapped in terra-base');
-    }
-  },
+  intl: context => (context.intl === undefined
+    ? new Error('Component is internationalized, and must be wrapped in terra-base')
+    : undefined
+  ),
 };
 
 const MaxSelection = ({ value }, context) => (

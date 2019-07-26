@@ -1,14 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
-import { FormattedMessage, injectIntl, intlShape } from 'react-intl';
+import { injectIntl, intlShape } from 'react-intl';
 import uniqueid from 'lodash.uniqueid';
-import Variants from './shared/_variants';
-import Dropdown from './_Dropdown';
-import Menu from './_Menu';
-import FrameUtil from './shared/_FrameUtil';
-import SharedUtil from './shared/_SharedUtil';
-import styles from './_Frame.module.scss';
+import Dropdown from '../_Dropdown';
+import Menu from './Menu';
+import FrameUtil from '../shared/_FrameUtil';
+import SharedUtil from '../shared/_SharedUtil';
+import styles from './Frame.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -32,7 +31,7 @@ const propTypes = {
   /**
    * The select display.
    */
-  display: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  display: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   /**
    * Additional attributes to spread onto the dropdown. ( Style, ClassNames, etc.. )
    */
@@ -52,11 +51,6 @@ const propTypes = {
    */
   maxHeight: PropTypes.number,
   /**
-   * The maximum number of options that can be selected. A value less than 2 will be ignored.
-   * Only applicable to variants allowing multiple selections (e.g.; `multiple`; `tag`).
-   */
-  maxSelectionCount: PropTypes.number,
-  /**
    * Content to display when no search results are found.
    */
   noResultContent: PropTypes.node,
@@ -73,17 +67,9 @@ const propTypes = {
    */
   onFocus: PropTypes.func,
   /**
-   * Callback function triggered when the search criteria changes.
-   */
-  onSearch: PropTypes.func,
-  /**
    * Callback function triggered when an option is selected.
    */
   onSelect: PropTypes.func,
-  /**
-   * Callback function for option filtering. function(searchValue, option)
-   */
-  optionFilter: PropTypes.func,
   /**
    * Placeholder text.
    */
@@ -99,17 +85,7 @@ const propTypes = {
   /**
    * The select value.
    */
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
-  /**
-   * The behavior of the select.
-   */
-  variant: PropTypes.oneOf([
-    Variants.COMBOBOX,
-    Variants.DEFAULT,
-    Variants.MULTIPLE,
-    Variants.SEARCH,
-    Variants.TAG,
-  ]),
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 const defaultProps = {
@@ -117,18 +93,28 @@ const defaultProps = {
   disabled: false,
   dropdownAttrs: undefined,
   isInvalid: false,
-  maxSelectionCount: undefined,
   noResultContent: undefined,
   onDeselect: undefined,
-  onSearch: undefined,
   onSelect: undefined,
-  optionFilter: undefined,
   placeholder: undefined,
   required: false,
   totalOptions: undefined,
   value: undefined,
-  variant: Variants.DEFAULT,
 };
+
+/**
+   * Determines compatible aria-labelledby IDs based on active variant
+   * Used with default, multiple, and tag variants to provide information about the label, displayed
+   * value and or the placeholder value.
+   */
+function ariaLabelledByIds(labelId, displayId, placeholderId) {
+  // Safari is able to read the display/placeholder text, other browsers need help to provide that info to
+  // the accessibility tree used by screen readers
+  if (SharedUtil.isSafari()) {
+    return `${labelId}`;
+  }
+  return `${labelId} ${displayId} ${placeholderId}`;
+}
 
 const selectMenuId = '#terra-select-menu';
 
@@ -144,12 +130,9 @@ class Frame extends React.Component {
       isInputFocused: false,
       isPositioned: false,
       hasSearchChanged: false,
-      searchValue: '',
     };
 
     this.ariaLabel = this.ariaLabel.bind(this);
-    this.ariaLabelledByIds = this.ariaLabelledByIds.bind(this);
-    this.setInput = this.setInput.bind(this);
     this.getDisplay = this.getDisplay.bind(this);
     this.renderToggleButton = this.renderToggleButton.bind(this);
     this.renderDescriptionText = this.renderDescriptionText.bind(this);
@@ -160,12 +143,8 @@ class Frame extends React.Component {
     this.handleBlur = this.handleBlur.bind(this);
     this.handleFocus = this.handleFocus.bind(this);
     this.handleSelect = this.handleSelect.bind(this);
-    this.handleSearch = this.handleSearch.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleInputMouseDown = this.handleInputMouseDown.bind(this);
-    this.handleInputFocus = this.handleInputFocus.bind(this);
-    this.handleInputBlur = this.handleInputBlur.bind(this);
     this.handleToggleMouseDown = this.handleToggleMouseDown.bind(this);
     this.handleToggleButtonMouseDown = this.handleToggleButtonMouseDown.bind(this);
     this.role = this.role.bind(this);
@@ -183,104 +162,33 @@ class Frame extends React.Component {
     clearTimeout(this.debounceTimer);
   }
 
-  setInput(input) {
-    this.input = input;
-  }
+  getDisplay(displayId, placeholderId) {
+    const { display, placeholder } = this.props;
 
-  getDisplay(displayId, placeholderId, ariaDescribedBy) {
-    const { hasSearchChanged, isOpen, searchValue } = this.state;
-    const {
-      disabled, display, placeholder, required, variant,
-    } = this.props;
-
-    const inputAttrs = {
-      disabled,
-      placeholder,
-      ref: this.setInput,
-      onChange: this.handleSearch,
-      onFocus: this.handleInputFocus,
-      onBlur: this.handleInputBlur,
-      onMouseDown: this.handleInputMouseDown,
-      'aria-label': this.ariaLabel(),
-      'aria-describedby': (variant === Variants.TAG || variant === Variants.MULTIPLE) ? `${displayId} ${ariaDescribedBy}` : ariaDescribedBy,
-      'aria-disabled': disabled,
-      'aria-owns': isOpen ? 'terra-select-menu' : undefined,
-      type: 'text',
-      className: cx('search-input', { 'is-hidden': FrameUtil.shouldHideSearch(this.props, this.state) }),
-    };
-
-    const multipleInputAttrs = {
-      required: required && !display.length ? true : undefined,
-      'aria-required': required && !display.length ? 'required' : undefined,
-      ...inputAttrs,
-    };
-    const comboboxInputAttrs = { required, 'aria-required': required, ...inputAttrs };
-
-    switch (variant) {
-      case Variants.TAG:
-      case Variants.MULTIPLE:
-        return (
-          <ul className={cx('content')}>
-            {display && display.length > 0
-              ? (
-                <li>
-                  <ul id={displayId} className={cx('display-content')}>
-                    {display}
-                    <li className={cx('visually-hidden-component')}>
-                      <FormattedMessage id="Terra.form.select.selected" />
-                    </li>
-                  </ul>
-                </li>
-              ) : null
-            }
-            <li className={cx('search-wrapper')}>
-              <input {...multipleInputAttrs} value={searchValue} />
-            </li>
-          </ul>
-        );
-      case Variants.SEARCH:
-      case Variants.COMBOBOX:
-        return <div className={cx('content')}><input {...comboboxInputAttrs} value={hasSearchChanged ? searchValue : display} /></div>;
-      default:
-        return display ? <span id={displayId}>{display}</span> : <div id={placeholderId} className={cx('placeholder')}>{placeholder || '\xa0'}</div>;
-    }
+    return (display
+      ? <span id={displayId}>{display}</span>
+      : <div id={placeholderId} className={cx('placeholder')}>{placeholder || '\xa0'}</div>
+    );
   }
 
   /**
    * Closes the dropdown.
    */
   closeDropdown() {
-    const { onSelect } = this.props;
-    const { searchValue } = this.state;
-
     this.setState({
       isAbove: false,
-      isFocused: document.activeElement === this.input || document.activeElement === this.select,
+      isFocused: document.activeElement === this.select,
       isOpen: false,
       isPositioned: false,
-      hasSearchChanged: false,
-      searchValue: '',
     });
-
-    // 'Tag' and 'Combobox' variants select the current search value when the component loses focus.
-    if (FrameUtil.shouldAddOptionOnBlur(this.props, this.state)) {
-      // NOTE: Since 'Combobox' does not allow blank strings to be created within the options dropdown,
-      // a blank input string should be explicitly converted into an empty string. This ensures that
-      // on blur, Combobox updates the search field to be an empty string when the user inputs a blank string.
-      // Upon failing to do so, Combobox resets the search field back to a previously selected value.
-      const freeText = searchValue.trim().length === 0 ? '' : searchValue;
-      if (onSelect) {
-        onSelect(freeText);
-      }
-    }
   }
 
   /**
    * Opens the dropdown.
    */
   openDropdown(event) {
-    const { isOpen } = this.state;
     const { disabled } = this.props;
+    const { isOpen } = this.state;
 
     if (isOpen || disabled) {
       return;
@@ -306,16 +214,12 @@ class Frame extends React.Component {
       return;
     }
 
-    if (this.input) {
-      this.input.focus();
-    } else {
-      // Allows time for state update to render select menu DOM before shifting focus to it
-      setTimeout(() => {
-        if (document.querySelector(selectMenuId)) {
-          document.querySelector(selectMenuId).focus();
-        }
-      }, 10);
-    }
+    // Allows time for state update to render select menu DOM before shifting focus to it
+    setTimeout(() => {
+      if (document.querySelector(selectMenuId)) {
+        document.querySelector(selectMenuId).focus();
+      }
+    }, 10);
 
     this.setState({ isOpen: true, isPositioned: false });
   }
@@ -325,7 +229,6 @@ class Frame extends React.Component {
    */
   positionDropdown() {
     const { isOpen } = this.state;
-
     if (!isOpen) {
       return;
     }
@@ -339,7 +242,7 @@ class Frame extends React.Component {
    * Handles the blur event.
    */
   handleBlur(event) {
-    const { variant, onBlur } = this.props;
+    const { onBlur } = this.props;
     // The check for dropdown.contains(activeElement) is necessary to prevent IE11 from closing dropdown on click of scrollbar in certain contexts.
     if (this.dropdown && (this.dropdown === document.activeElement && this.dropdown.contains(document.activeElement))) {
       return;
@@ -350,17 +253,14 @@ class Frame extends React.Component {
      * is shifted to the select menu and if so, suppresses the rest of the blur handler to prevent
      * the select menu from being closed.
      */
-    if (variant === Variants.DEFAULT) {
-      // event.relatedTarget returns null in IE 10 / IE 11
-      if (event.relatedTarget == null) {
-        // IE 11 sets document.activeElement to the next focused element before the blur event is called
-        if (document.querySelector(selectMenuId) === document.activeElement) {
-          return;
-        }
-      // Modern browsers support event.relatedTarget
-      } else if (document.querySelector(selectMenuId) === event.relatedTarget) {
+    if (event.relatedTarget == null) {
+      // IE 11 sets document.activeElement to the next focused element before the blur event is called
+      if (document.querySelector(selectMenuId) === document.activeElement) {
         return;
       }
+    // Modern browsers support event.relatedTarget
+    } else if (document.querySelector(selectMenuId) === event.relatedTarget) {
+      return;
     }
 
 
@@ -396,20 +296,14 @@ class Frame extends React.Component {
    * @param {event} event - The onKeyDown event.
    */
   handleKeyDown(event) {
-    const { value, onDeselect } = this.props;
-    const { searchValue } = this.state;
-    const { key, target } = event;
+    const { key } = event;
 
-    if (key === ' ' && target !== this.input) {
+    if (key === ' ') {
       event.preventDefault();
       this.openDropdown(event);
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
       event.preventDefault();
       this.openDropdown(event);
-    } else if (key === 'Backspace' && FrameUtil.allowsMultipleSelections(this.props) && !searchValue && value.length > 0) {
-      if (onDeselect) {
-        onDeselect(value[value.length - 1]);
-      }
     } else if (key === 'Escape') {
       this.closeDropdown();
     }
@@ -420,37 +314,7 @@ class Frame extends React.Component {
    * @param {event} event - The mouse down event.
    */
   handleMouseDown(event) {
-    const { variant } = this.props;
-
-    if (variant !== Variants.DEFAULT) {
-      // Preventing default events stops the search input from losing focus.
-      // The default variant has no search input therefore the mouse down gives the component focus.
-      event.preventDefault();
-    }
     this.openDropdown(event);
-  }
-
-  /**
-   * Handles the input mouse down events.
-   * @param {event} event - The mouse down event.
-   */
-  handleInputMouseDown(event) {
-    event.stopPropagation();
-    this.openDropdown(event);
-  }
-
-  /**
-   * Handles the input focus event.
-   */
-  handleInputFocus() {
-    this.setState({ isInputFocused: true });
-  }
-
-  /**
-   * Handles the input blur event.
-   */
-  handleInputBlur() {
-    this.setState({ isInputFocused: false });
   }
 
   /**
@@ -472,28 +336,6 @@ class Frame extends React.Component {
 
     if (isOpen) {
       this.closeDropdown();
-      if (this.input) {
-        this.input.focus();
-      }
-    }
-  }
-
-  /**
-   * Handles changes to the search value.
-   * @param {event} event - The input change event.
-   */
-  handleSearch(event) {
-    const { onSearch } = this.props;
-    const searchValue = event.target.value;
-
-    this.setState({
-      isOpen: true,
-      hasSearchChanged: true,
-      searchValue,
-    });
-
-    if (onSearch) {
-      onSearch(searchValue);
     }
   }
 
@@ -503,15 +345,11 @@ class Frame extends React.Component {
    * @param {ReactNode} option - The option that was selected.
    */
   handleSelect(value, option) {
-    const { isAbove } = this.state;
     const { onSelect } = this.props;
-    const isOpen = FrameUtil.allowsMultipleSelections(this.props);
 
     this.setState({
-      searchValue: '',
-      hasSearchChanged: false,
-      isOpen,
-      isAbove: isOpen ? isAbove : false,
+      isOpen: false,
+      isAbove: false,
     });
 
     if (onSelect) {
@@ -552,147 +390,47 @@ class Frame extends React.Component {
   }
 
   /**
-   * Determines compatible aria-labelledby IDs based on active variant
-   * Used with default, multiple, and tag variants to provide information about the label, displayed
-   * value and or the placeholder value.
-   */
-  ariaLabelledByIds(labelId, displayId, placeholderId) {
-    const { variant } = this.props;
-
-    let ariaLabelledBy = null;
-
-    // Safari is able to read the display/placeholder text, other browsers need help to provide that info to
-    // the accessibility tree used by screen readers
-    if (variant === Variants.DEFAULT) {
-      if (SharedUtil.isSafari()) {
-        ariaLabelledBy = `${labelId}`;
-      } else {
-        ariaLabelledBy = `${labelId} ${displayId} ${placeholderId}`;
-      }
-    }
-
-    return ariaLabelledBy;
-  }
-
-  /**
    * Determines compatible role attribute to apply to select based on active variant and disabled prop
    */
   role() {
-    const { variant, disabled } = this.props;
-    // role="application" needed to allow JAWS to work correctly with the select and use our key event listeners
-    let role = 'application';
-    if (disabled) { role = undefined; }
-    if (variant === Variants.DEFAULT) { role = 'combobox'; }
-    return role;
+    const { disabled } = this.props;
+    return disabled ? undefined : 'combobox';
   }
 
   /**
    * Renders descriptive text related to the select component to be available for screen readers
    */
   renderDescriptionText() {
-    const { intl, variant, totalOptions } = this.props;
-    const { isInputFocused } = this.state;
+    const { intl, totalOptions } = this.props;
 
     const listOfOptionsTxt = intl.formatMessage({ id: 'Terra.form.select.listOfTotalOptions' }, { total: totalOptions });
     const defaultUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.defaultUsageGuidance' });
-    const mobileUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.mobileUsageGuidance' });
-    const multiSelectUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.multiSelectUsageGuidance' });
-    const searchUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.searchUsageGuidance' });
 
     if ('ontouchstart' in window) {
-      if (variant === Variants.DEFAULT) {
-        return `${listOfOptionsTxt}`;
-      }
-
-      if (isInputFocused) {
-        return `${listOfOptionsTxt}`;
-      }
-
-      return `${listOfOptionsTxt} ${mobileUsageGuidanceTxt}`;
+      return listOfOptionsTxt;
     }
 
-    switch (variant) {
-      case Variants.TAG:
-      case Variants.MULTIPLE:
-        return `${listOfOptionsTxt} ${multiSelectUsageGuidanceTxt}`;
-      case Variants.SEARCH:
-      case Variants.COMBOBOX:
-        return `${listOfOptionsTxt} ${searchUsageGuidanceTxt}`;
-      default:
-        return `${listOfOptionsTxt} ${defaultUsageGuidanceTxt}`;
-    }
+    return `${listOfOptionsTxt} ${defaultUsageGuidanceTxt}`;
   }
 
   renderToggleButton() {
-    const { intl, variant } = this.props;
-    const { isInputFocused } = this.state;
-
-    const mobileButtonUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.mobileButtonUsageGuidance' });
-
     /**
      * Devices that support ontouchstart trigger an onScreen keyboard when inputs are focused and
      * need customized rendering to avoid issues when used with a screen reader.
      */
-    if ('ontouchstart' in window) {
-      if (variant !== Variants.DEFAULT) {
-        /**
-         * When the input within the select is focused, we don't want to render the toggle button that
-         * shifts focus to the select menu as it causes issues when using VoiceOver on iOS.
-         * Always rendering the toggle button allows the users to shift the virtual indicator to the
-         * toggle button and tap on it which shifts focus to the select menu dropdown. When this
-         * happens on iOS, the onScreen keyboard will close and shift focus back to the input which
-         * prevents users from ever navigating through the select options.
-         */
-        if (isInputFocused) {
-          return (
-            <div data-terra-form-select-toggle className={cx('toggle')} onMouseDown={this.handleToggleMouseDown}>
-              <span className={cx('arrow-icon')} />
-            </div>
-          );
-        }
-
-        /**
-         * Toggle button enables shifting focus to dropdown. This allows iOS users that are using
-         * VoiceOver the ability to navigate to the select options.
-         */
-        return (
-          <div className={cx(['toggle', 'toggle-narrow'])}>
-            <button
-              type="button"
-              className={cx('toggle-btn')}
-              aria-label={mobileButtonUsageGuidanceTxt}
-              data-terra-form-select-toggle-button
-              onMouseDown={this.handleToggleButtonMouseDown}
-            >
-              <span className={cx('arrow-icon')} data-terra-form-select-toggle-button-icon />
-            </button>
-          </div>
-        );
-      }
-
-      /**
-       * If the variant is default, we don't need to set up any event handlers on the toggle
-       * The event handlers on data-terra-select-combobox will handle tap/click events on this element
-       */
-      return (
-        <div data-terra-form-select-toggle className={cx('toggle')}>
-          <span className={cx('arrow-icon')} />
-        </div>
-      );
-    }
-
+    /**
+     * If the variant is default, we don't need to set up any event handlers on the toggle
+     * The event handlers on data-terra-select-combobox will handle tap/click events on this element
+     */
+    const onMouseDown = 'ontouchstart' in window ? undefined : this.toggleDropdown;
     return (
-      <div data-terra-form-select-toggle className={cx('toggle')} onMouseDown={this.toggleDropdown}>
+      <div data-terra-form-select-toggle className={cx('toggle')} onMouseDown={onMouseDown}>
         <span className={cx('arrow-icon')} />
       </div>
     );
   }
 
   render() {
-    const {
-      isAbove, isFocused, isOpen, isPositioned, searchValue,
-    } = this.state;
-
     const {
       ariaLabel,
       clearOptionDisplay,
@@ -703,23 +441,23 @@ class Frame extends React.Component {
       intl,
       isInvalid,
       maxHeight,
-      maxSelectionCount,
       noResultContent,
       onDeselect,
-      onSearch,
       onSelect,
-      optionFilter,
       placeholder,
       required,
       totalOptions,
-      variant,
       value,
       ...customProps
     } = this.props;
 
+    const {
+      isAbove, isFocused, isOpen, isPositioned,
+    } = this.state;
+
     const selectClasses = cx([
       'select',
-      variant,
+      'default',
       { 'is-above': isAbove },
       { 'is-disabled': disabled },
       { 'is-focused': isFocused },
@@ -737,31 +475,30 @@ class Frame extends React.Component {
 
     const menuProps = {
       value,
-      variant,
-      onDeselect,
-      optionFilter,
       noResultContent,
+      onDeselect,
       visuallyHiddenComponent: this.visuallyHiddenComponent,
       onSelect: this.handleSelect,
       onRequestClose: this.closeDropdown,
-      searchValue,
       input: this.input,
       select: this.select,
-      maxSelectionCount,
       clearOptionDisplay,
+      variant: 'default',
+      searchValue: '',
+      optionFilter: () => true,
     };
 
     return (
       <div
         {...customProps}
         role={this.role()}
-        aria-required={variant === Variants.DEFAULT ? required : null}
+        aria-required={required}
         data-terra-select-combobox
         aria-controls={!disabled && isOpen ? 'terra-select-menu' : undefined}
         aria-disabled={!!disabled}
         aria-expanded={!!disabled && !!isOpen}
         aria-haspopup={!disabled ? 'true' : undefined}
-        aria-labelledby={this.ariaLabelledByIds(labelId, displayId, placeholderId)}
+        aria-labelledby={ariaLabelledByIds(labelId, displayId, placeholderId)}
         aria-describedby={ariaDescribedBy}
         aria-owns={isOpen ? 'terra-select-menu' : undefined}
         className={selectClasses}
@@ -777,8 +514,8 @@ class Frame extends React.Component {
           <span id={labelId}>{this.ariaLabel()}</span>
           <span id={descriptionId}>{this.renderDescriptionText()}</span>
         </div>
-        <div className={cx('display')} role={variant === Variants.DEFAULT ? 'textbox' : null}>
-          {this.getDisplay(displayId, placeholderId, ariaDescribedBy)}
+        <div className={cx('display')} role="textbox">
+          {this.getDisplay(displayId, placeholderId)}
         </div>
         {this.renderToggleButton()}
         <span
@@ -788,8 +525,7 @@ class Frame extends React.Component {
           className={cx('visually-hidden-component')}
           ref={this.visuallyHiddenComponent}
         />
-        {isOpen
-          && (
+        {isOpen && (
           <Dropdown
             {...dropdownAttrs}
             id={isOpen ? 'terra-select-dropdown' : undefined}
@@ -804,8 +540,7 @@ class Frame extends React.Component {
               {children}
             </Menu>
           </Dropdown>
-          )
-        }
+        )}
       </div>
     );
   }

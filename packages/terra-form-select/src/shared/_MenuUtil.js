@@ -51,7 +51,7 @@ class MenuUtil {
   }
 
   /**
-   * Determines if the query is contianed within the array.
+   * Determines if the query is contained within the array.
    * @param {array|undefined} array - The initial array.
    * @param {string|undefined} query - The value being searched for.
    * @return {boolean} - True if the query is contained within the array.
