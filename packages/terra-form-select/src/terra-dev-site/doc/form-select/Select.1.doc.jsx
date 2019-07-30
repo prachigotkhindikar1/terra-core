@@ -96,20 +96,17 @@ const Index = () => (
       description: 'An example of implementing a custom max height of the dropdown.',
       example: <MaxHeightExample />,
       source: MaxHeightExampleSrc,
-    },
-    // {
-    //   title: 'Ability to Clear Selection (applies to only \'default\', \'combobox\', and \'search\')',
-    //   description: 'An example with an option to clear the selected item. (Not applicable to \'multiple\' or \'tag\' variants)',
-    //   example: <AllowClearExample />,
-    //   source: AllowClearExampleSrc,
-    // },
-    {
+    }, {
+      title: 'Ability to Clear Selection (applies to only \'default\', \'combobox\', and \'search\')',
+      description: 'An example with an option to clear the selected item. (Not applicable to \'multiple\' or \'tag\' variants)',
+      example: <AllowClearExample />,
+      source: AllowClearExampleSrc,
+    }, {
       title: 'Create a Controlled Select (applies to all)',
       description: 'An example of implementing a controlled Select.',
       example: <ControlledExample />,
       source: ControlledExampleSrc,
-    },
-    ]}
+    }]}
   />
 );
 

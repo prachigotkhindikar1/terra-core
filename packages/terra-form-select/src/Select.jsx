@@ -133,26 +133,27 @@ const contextTypes = {
 };
 
 function Select(props) {
-  const { variant } = props;
+  const { variant, ...otherProps } = props;
 
   switch (variant) {
-    case Variants.COMBOBOX:
-      return <Combobox {...props} />;
+    case Variants.COMBOBOX: {
+      const { maxSelectionCount, ...comboboxProps } = otherProps;
+      return <Combobox {...comboboxProps} />;
+    }
     case Variants.MULTIPLE:
-      return <Multiple {...props} />;
+      return <Multiple {...otherProps} />;
     case Variants.SEARCH:
-      return <Search {...props} />;
+      return <Search {...otherProps} />;
     case Variants.TAG:
-      return <Tag {...props} />;
+      return <Tag {...otherProps} />;
     case Variants.DEFAULT:
     default: {
       const {
         maxSelectionCount,
         onSearch,
         optionFilter,
-        variant: v,
         ...defaultSelectProps
-      } = props;
+      } = otherProps;
       return <Default {...defaultSelectProps} />;
     }
   }

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Frame from '../_Frame';
+import Frame from './Frame';
 import Option from '../shared/_Option';
 import OptGroup from '../shared/_OptGroup';
 import SelectUtil from '../shared/_SelectUtil';
