@@ -53,14 +53,12 @@ const Index = () => (
       description: 'A default variant allows selecting a single option.',
       example: <DefaultExample />,
       source: DefaultExampleSrc,
-    },
-    // {
-    //   title: 'Search',
-    //   description: 'A search variant provides a searchable single select.',
-    //   example: <SearchExample />,
-    //   source: SearchExampleSrc,
-    // },
-    {
+    }, {
+      title: 'Search',
+      description: 'A search variant provides a searchable single select.',
+      example: <SearchExample />,
+      source: SearchExampleSrc,
+    }, {
       title: 'Combobox',
       description: 'A combobox variant allows a user to enter a single free text entry or select a single option from the the dropdown.',
       example: <ComboboxExample />,

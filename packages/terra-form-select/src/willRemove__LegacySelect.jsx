@@ -6,7 +6,7 @@ import Frame from './_Frame';
 import Option from './shared/_Option';
 import OptGroup from './shared/_OptGroup';
 import Tag from './shared/_Tag';
-import Util from './shared/_SelectUtil';
+import SelectUtil from './shared/_SelectUtil';
 
 const propTypes = {
   /**
@@ -138,7 +138,7 @@ class Select extends React.Component {
 
     this.state = {
       tags: [],
-      value: Util.defaultValue(props),
+      value: SelectUtil.defaultValue(props),
     };
 
     this.display = this.display.bind(this);
@@ -151,18 +151,18 @@ class Select extends React.Component {
    * Returns the appropriate variant display
    */
   display() {
-    const selectValue = Util.value(this.props, this.state);
+    const selectValue = SelectUtil.value(this.props, this.state);
 
     switch (this.props.variant) {
       case Variants.TAG:
       case Variants.MULTIPLE:
         return selectValue.map(tag => (
           <Tag value={tag} key={tag} onDeselect={this.handleDeselect}>
-            {Util.valueDisplay(this.props, tag)}
+            {SelectUtil.valueDisplay(this.props, tag)}
           </Tag>
         ));
       default:
-        return Util.valueDisplay(this.props, selectValue);
+        return SelectUtil.valueDisplay(this.props, selectValue);
     }
   }
 
@@ -185,7 +185,7 @@ class Select extends React.Component {
    * @param {number|string} value - The value to be removed.
    */
   handleDeselect(value) {
-    this.handleChange(Util.deselect(this.props, this.state, value));
+    this.handleChange(SelectUtil.deselect(this.props, this.state, value));
 
     if (this.props.onDeselect) {
       this.props.onDeselect(value);
@@ -198,10 +198,10 @@ class Select extends React.Component {
    * @param {ReactNode} option - The selected option.
    */
   handleSelect(value, option) {
-    this.handleChange(Util.select(this.props, this.state, value));
+    this.handleChange(SelectUtil.select(this.props, this.state, value));
 
     // Add new tags for uncontrolled components.
-    if (this.props.value === undefined && !Util.findByValue(this.props, this.state, value)) {
+    if (this.props.value === undefined && !SelectUtil.findByValue(this.props, this.state, value)) {
       this.setState(prevState => ({ tags: [...prevState.tags, <Option key={value} display={value} value={value} />] }));
     }
 
@@ -232,13 +232,13 @@ class Select extends React.Component {
       <Frame
         {...otherProps}
         data-terra-select
-        value={Util.value(this.props, this.state)}
+        value={SelectUtil.value(this.props, this.state)}
         display={this.display()}
         onDeselect={this.handleDeselect}
         onSelect={this.handleSelect}
         placeholder={selectPlaceholder}
         required={required}
-        totalOptions={Util.getTotalNumberOfOptions(children)}
+        totalOptions={SelectUtil.getTotalNumberOfOptions(children)}
         clearOptionDisplay={clearOptionDisplay}
         dropdown={dropdownProps => (
           <DropdownMenu {...dropdownProps}>
