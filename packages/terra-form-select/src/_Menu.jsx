@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
 import { polyfill } from 'react-lifecycles-compat';
 import { injectIntl, intlShape } from 'react-intl';
+import KeyCode from 'keycode-js';
 import Variants from './shared/_variants';
 import AddOption from './shared/_AddOption';
 import ClearOption from './shared/_ClearOption';
@@ -185,16 +186,11 @@ class Menu extends React.Component {
   }
 
   componentWillUnmount() {
-    const { closedViaKeyEvent } = this.state;
-    const { variant, select, input } = this.props;
-
     this.clearSearch();
     this.clearScrollTimeout();
-    if (closedViaKeyEvent) {
-      if (variant === Variants.DEFAULT) {
-        if (select) {
-          select.focus();
-        }
+    if (this.state.closedViaKeyEvent) {
+      if (this.props.variant === Variants.DEFAULT) {
+        this.props.select.focus();
         if (SharedUtil.isSafari()) {
           /**
            * Shifting focus back to the select specifically
@@ -205,27 +201,22 @@ class Menu extends React.Component {
            * Refocusing on select seems to seems to mitigate this VO bug.
            */
           setTimeout(() => {
-            if (select) {
-              select.focus();
-            }
+            this.props.select.focus();
           }, 300);
         }
-      } else if (input) {
-        input.focus();
+      } else {
+        this.props.input.focus();
       }
     }
     document.removeEventListener('keydown', this.handleKeyDown);
   }
 
   isActiveSelected() {
-    const { value } = this.props;
-    const { active } = this.state;
-
-    if (Array.isArray(value)) {
-      return value.includes(active);
+    if (Array.isArray(this.props.value)) {
+      return this.props.value.includes(this.state.active);
     }
 
-    return active === value;
+    return this.state.active === this.props.value;
   }
 
   updateNoResultsScreenReader() {
@@ -243,7 +234,6 @@ class Menu extends React.Component {
         intl,
         visuallyHiddenComponent,
         searchValue,
-        maxSelectionCount,
       } = this.props;
 
       // Race condition can occur between calling timeout and unmounting this component.
@@ -254,7 +244,7 @@ class Menu extends React.Component {
       if (hasNoResults) {
         visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.noResults' }, { text: searchValue });
       } else if (hasMaxSelection) {
-        visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.maxSelectionOption' }, { text: maxSelectionCount });
+        visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.maxSelectionOption' }, { text: this.props.maxSelectionCount });
       } else {
         visuallyHiddenComponent.current.innerText = '';
       }
@@ -267,48 +257,47 @@ class Menu extends React.Component {
       variant,
       clearOptionDisplay,
       visuallyHiddenComponent,
-      children,
     } = this.props;
-
-    const { active } = this.state;
 
     const clearSelectTxt = intl.formatMessage({ id: 'Terra.form.select.clearSelect' });
 
     if (this.menu !== null) {
-      this.menu.setAttribute('aria-activedescendant', `terra-select-option-${active}`);
+      this.menu.setAttribute('aria-activedescendant', `terra-select-option-${this.state.active}`);
     }
 
     // Announces options to screen readers as user navigates through them via keyboard
-    if (visuallyHiddenComponent) {
-      // Detects if option is clear option and provides accessible text
-      if (clearOptionDisplay) {
-        const element = this.menu.querySelector('[data-select-active]');
-        if (element && element.hasAttribute('data-terra-select-clear-option')) {
-          visuallyHiddenComponent.current.innerText = clearSelectTxt;
-        }
+    if (!visuallyHiddenComponent || !visuallyHiddenComponent.current) {
+      return;
+    }
+
+    // Detects if option is clear option and provides accessible text
+    if (clearOptionDisplay) {
+      const active = this.menu.querySelector('[data-select-active]');
+      if (active && active.hasAttribute('data-terra-select-clear-option')) {
+        visuallyHiddenComponent.current.innerText = clearSelectTxt;
       }
+    }
 
-      // Detects if option is an "Add option" and provides accessible text
-      if (variant === Variants.COMBOBOX || variant === Variants.TAG) {
-        const element = this.menu.querySelector('[data-select-active]');
+    // Detects if option is an "Add option" and provides accessible text
+    if (variant === Variants.COMBOBOX || variant === Variants.TAG) {
+      const active = this.menu.querySelector('[data-select-active]');
 
-        if (element && element.hasAttribute('data-terra-select-add-option')) {
-          const display = element.querySelector("[class*='display']").innerText;
-          visuallyHiddenComponent.current.innerText = display;
-        }
+      if (active && active.hasAttribute('data-terra-select-add-option')) {
+        const display = active.querySelector("[class*='display']").innerText;
+        visuallyHiddenComponent.current.innerText = display;
       }
+    }
 
-      const element = MenuUtil.findByValue(children, active);
-      if (element) {
-        if (element.props.display === '' && element.props.value === '') {
-          // Used for case where users selects clear option and opens
-          // dropdown again and navigates to clear option
-          visuallyHiddenComponent.current.innerText = clearSelectTxt;
-        } else if (this.isActiveSelected()) {
-          visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.selectedText' }, { text: element.props.display });
-        } else {
-          visuallyHiddenComponent.current.innerText = element.props.display;
-        }
+    const element = MenuUtil.findByValue(this.props.children, this.state.active);
+    if (element) {
+      if (element.props.display === '' && element.props.value === '') {
+        // Used for case where users selects clear option and opens
+        // dropdown again and navigates to clear option
+        visuallyHiddenComponent.current.innerText = clearSelectTxt;
+      } else if (this.isActiveSelected()) {
+        visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.selectedText' }, { text: element.props.display });
+      } else {
+        visuallyHiddenComponent.current.innerText = element.props.display;
       }
     }
   }
@@ -336,21 +325,18 @@ class Menu extends React.Component {
    * @return {array} - A cloned copy of the object.
    */
   clone(object) {
-    const { variant, value } = this.props;
-    const { active } = this.state;
-
     return React.Children.map(object, (option) => {
       if (option.type.isOption) {
         return React.cloneElement(option, {
           id: `terra-select-option-${option.props.value}`,
-          isActive: option.props.value === active,
-          isCheckable: MenuUtil.allowsMultipleSelections(variant),
-          isSelected: MenuUtil.isSelected(value, option.props.value),
-          variant,
+          isActive: option.props.value === this.state.active,
+          isCheckable: MenuUtil.allowsMultipleSelections(this.props.variant),
+          isSelected: MenuUtil.isSelected(this.props.value, option.props.value),
+          variant: this.props.variant,
           onMouseDown: () => { this.downOption = option; },
           onMouseUp: event => this.handleOptionClick(event, option),
           onMouseEnter: event => this.handleMouseEnter(event, option),
-          ...(option.props.value === active) && { 'data-select-active': true },
+          ...(option.props.value === this.state.active) && { 'data-select-active': true },
         });
       } if (option.type.isOptGroup) {
         return React.cloneElement(option, {}, this.clone(option.props.children));
@@ -364,7 +350,7 @@ class Menu extends React.Component {
    * @param {event} event - The key down event.
    */
   handleKeyDown(event) {
-    const { keyCode, key } = event;
+    const { keyCode } = event;
     const { active, children } = this.state;
     const {
       intl,
@@ -372,25 +358,22 @@ class Menu extends React.Component {
       onDeselect,
       value,
       variant,
-      clearOptionDisplay,
-      visuallyHiddenComponent,
     } = this.props;
-    const isAlphanumericKey = keyCode >= 48 && keyCode <= 90;
 
     const selectedTxt = intl.formatMessage({ id: 'Terra.form.select.selected' });
     const unselectedTxt = intl.formatMessage({ id: 'Terra.form.select.unselected' });
 
-    if (key === 'ArrowUp') {
+    if (keyCode === KeyCode.KEY_UP) {
       this.clearScrollTimeout();
       this.scrollTimeout = setTimeout(this.clearScrollTimeout, 500);
       this.setState({ active: MenuUtil.findPrevious(children, active) });
       this.updateCurrentActiveScreenReader();
-    } else if (key === 'ArrowDown') {
+    } else if (keyCode === KeyCode.KEY_DOWN) {
       this.clearScrollTimeout();
       this.scrollTimeout = setTimeout(this.clearScrollTimeout, 500);
       this.setState({ active: MenuUtil.findNext(children, active) });
       this.updateCurrentActiveScreenReader();
-    } else if (key === 'Enter' && active !== null && (!MenuUtil.allowsMultipleSelections(variant) || !MenuUtil.includes(value, active))) {
+    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && (!MenuUtil.allowsMultipleSelections(variant) || !MenuUtil.includes(value, active))) {
       event.preventDefault();
 
       if (!MenuUtil.allowsMultipleSelections(variant)) {
@@ -398,10 +381,10 @@ class Menu extends React.Component {
       }
       const option = MenuUtil.findByValue(children, active);
       // Handles communicating the case where a clear option is selected to screen readers
-      if (clearOptionDisplay) {
+      if (this.props.clearOptionDisplay) {
         const activeOption = this.menu.querySelector('[data-select-active]');
         if (activeOption && activeOption.hasAttribute('data-terra-select-clear-option')) {
-          visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.selectCleared' });
+          this.props.visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.selectCleared' });
         }
       }
       // Handles communicating the case where a regular option is selected to screen readers.
@@ -416,15 +399,13 @@ class Menu extends React.Component {
         */
       if (SharedUtil.isSafari()) {
         if (variant === Variants.MULTIPLE || variant === Variants.TAG) {
-          visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
+          this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
         }
       } else {
-        visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
+        this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
       }
-      if (onSelect) {
-        onSelect(option.props.value, option);
-      }
-    } else if (key === 'Enter' && active !== null && MenuUtil.allowsMultipleSelections(variant) && MenuUtil.includes(value, active)) {
+      onSelect(option.props.value, option);
+    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && MenuUtil.allowsMultipleSelections(variant) && MenuUtil.includes(value, active)) {
       event.preventDefault();
       const option = MenuUtil.findByValue(children, active);
       // Handles communicating the case where a regular option is Unselected to screen readers.
@@ -439,20 +420,20 @@ class Menu extends React.Component {
         */
       if (SharedUtil.isSafari()) {
         if (variant === Variants.MULTIPLE || variant === Variants.TAG) {
-          visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
+          this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
         }
       } else {
-        visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
+        this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
       }
       onDeselect(option.props.value, option);
-    } else if (key === 'Home') {
+    } else if (keyCode === KeyCode.KEY_HOME) {
       event.preventDefault();
       this.setState({ active: MenuUtil.findFirst(children) });
-    } else if (key === 'End') {
+    } else if (keyCode === KeyCode.KEY_END) {
       event.preventDefault();
       this.setState({ active: MenuUtil.findLast(children) });
-    } else if (variant === Variants.DEFAULT && isAlphanumericKey) {
-      this.searchString = this.searchString.concat(key);
+    } else if (variant === Variants.DEFAULT && keyCode >= 48 && keyCode <= 90) {
+      this.searchString = this.searchString.concat(String.fromCharCode(keyCode));
       clearTimeout(this.searchTimeout);
       this.searchTimeout = setTimeout(this.clearSearch, 500);
       this.setState(prevState => ({ active: MenuUtil.findWithStartString(prevState.children, this.searchString) || active }));
@@ -474,18 +455,12 @@ class Menu extends React.Component {
     } = this.props;
 
     if (MenuUtil.allowsMultipleSelections(variant) && MenuUtil.includes(value, option.props.value)) {
-      if (onDeselect) {
-        onDeselect(option.props.value, option);
-      }
+      onDeselect(option.props.value, option);
     } else {
-      if (onSelect) {
-        onSelect(option.props.value, option);
-      }
+      onSelect(option.props.value, option);
       if (variant === Variants.DEFAULT) {
-        if (select) {
-          select.focus();
-        }
-      } else if (input) {
+        select.focus();
+      } else {
         input.focus();
       }
     }
@@ -518,9 +493,8 @@ class Menu extends React.Component {
    * Options below the dropdown will be scrolled to the bottom of the menu.
    */
   scrollIntoView() {
-    const { active } = this.state;
     const activeOption = this.menu.querySelector('[data-select-active]');
-    if (!active || activeOption === null) {
+    if (!this.state.active || activeOption === null) {
       return;
     }
 
@@ -535,8 +509,6 @@ class Menu extends React.Component {
   }
 
   render() {
-    const { active, children } = this.state;
-
     return (
       /**
        * Note: role="listbox" and aria-activedescendant needed for VoiceOver on iOS to properly
@@ -550,10 +522,10 @@ class Menu extends React.Component {
         role="listbox"
         className={cx('menu')}
         ref={(menu) => { this.menu = menu; }}
-        {...(active !== null ? { 'aria-activedescendant': `terra-select-option-${active}` } : {})}
+        {...(this.state.active !== null ? { 'aria-activedescendant': `terra-select-option-${this.state.active}` } : {})}
         tabIndex="0"
       >
-        {this.clone(children)}
+        {this.clone(this.state.children)}
       </ul>
     );
   }

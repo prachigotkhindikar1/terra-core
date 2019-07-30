@@ -8,7 +8,7 @@ class MenuUtil {
    * @param {string|undefined} query - The value being searched for.
    * @return {boolean} - True if the string contains the query.
    */
-  static contains(string, query) {
+  static contains(string = '', query = '') {
     if (!string) {
       return false;
     }
@@ -57,7 +57,7 @@ class MenuUtil {
    * @return {boolean} - True if the query is contained within the array.
    */
   static includes(array, query) {
-    if (!array) {
+    if (!array || !array.length) {
       return false;
     }
 
@@ -214,16 +214,23 @@ class MenuUtil {
 
     if (options.length === 0) {
       return null;
-    } if (state.searchValue === undefined) {
+    }
+
+    if (active !== null && MenuUtil.findByValue(options, active)) {
+      return active;
+    }
+
+    if (state.searchValue === undefined) {
       const selected = options.find(option => (
         Array.isArray(value) ? MenuUtil.includes(value, option.props.value) : MenuUtil.isEqual(value, option.props.value)
       ));
       return selected === undefined ? options[0].props.value : selected.props.value;
-    } if (searchValue !== state.searchValue) {
-      return options[0].props.value;
-    } if (active !== null && MenuUtil.findByValue(options, active)) {
-      return active;
     }
+
+    if (searchValue !== state.searchValue) {
+      return options[0].props.value;
+    }
+
     return options[0].props.value;
   }
 
