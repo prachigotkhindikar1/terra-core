@@ -59,12 +59,14 @@ const Index = () => (
     //   description: 'A search variant provides a searchable single select.',
     //   example: <SearchExample />,
     //   source: SearchExampleSrc,
-    // }, {
-    //   title: 'Combobox',
-    //   description: 'A combobox variant allows a user to enter a single free text entry or select a single option from the the dropdown.',
-    //   example: <ComboboxExample />,
-    //   source: ComboboxExampleSrc,
-    // }, {
+    // },
+    {
+      title: 'Combobox',
+      description: 'A combobox variant allows a user to enter a single free text entry or select a single option from the the dropdown.',
+      example: <ComboboxExample />,
+      source: ComboboxExampleSrc,
+    },
+    // {
     //   title: 'Multiple',
     //   description: 'A multiple variant allows searching and selecting multiple options.',
     //   example: <MultipleExample />,
