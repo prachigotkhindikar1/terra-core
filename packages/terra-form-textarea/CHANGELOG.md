@@ -4,6 +4,17 @@ ChangeLog
 Unreleased
 ----------
 
+3.21.0 - (July 30, 2019)
+------------------
+### Changed
+* Minor dependency version bump
+* Updated errorIcon default prop from `Field.defaultProps.errorIcon` with `<IconError>` component.
+
+3.20.0 - (July 24, 2019)
+------------------
+### Changed
+* Minor dependency version bump
+
 3.19.0 - (July 17, 2019)
 ------------------
 ## Changed
