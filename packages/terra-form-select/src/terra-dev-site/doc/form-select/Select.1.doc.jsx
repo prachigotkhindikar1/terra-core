@@ -64,12 +64,13 @@ const Index = () => (
       example: <ComboboxExample />,
       source: ComboboxExampleSrc,
     },
+    {
+      title: 'Multiple',
+      description: 'A multiple variant allows searching and selecting multiple options.',
+      example: <MultipleExample />,
+      source: MultipleExampleSrc,
+    },
     // {
-    //   title: 'Multiple',
-    //   description: 'A multiple variant allows searching and selecting multiple options.',
-    //   example: <MultipleExample />,
-    //   source: MultipleExampleSrc,
-    // }, {
     //   title: 'Tag',
     //   description: 'A tag variant allows a user to enter multiple custom free text entries or select multiple options from the the dropdown.',
     //   example: <TagExample />,
