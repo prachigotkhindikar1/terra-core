@@ -1,7 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Variants from '../shared/_variants';
-import DropdownMenu from '../_Menu';
 import Frame from '../_Frame';
 import Option from '../shared/_Option';
 import OptGroup from '../shared/_OptGroup';
@@ -92,16 +90,6 @@ const propTypes = {
    * The selected value.
    */
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
-  /**
-   * The behavior of the select. One of `default`, `combobox`, `multiple`, `tag`, or `search`.
-   */
-  variant: PropTypes.oneOf([
-    Variants.COMBOBOX,
-    Variants.DEFAULT,
-    Variants.MULTIPLE,
-    Variants.SEARCH,
-    Variants.TAG,
-  ]),
 };
 
 const defaultProps = {
@@ -121,7 +109,6 @@ const defaultProps = {
   placeholder: undefined,
   required: false,
   value: undefined,
-  variant: 'default',
 };
 
 const contextTypes = {
@@ -131,14 +118,20 @@ const contextTypes = {
   ),
 };
 
+class Multiple extends React.Component {
+  static defaultValue(props) {
+    if (props.value !== undefined) {
+      return null;
+    }
 
-class Select extends React.Component {
+    return props.defaultValue ? [props.defaultValue].flatten() : [];
+  }
+
   constructor(props) {
     super(props);
 
     this.state = {
-      tags: [],
-      value: SelectUtil.defaultValue(props),
+      value: Multiple.defaultValue(props),
     };
 
     this.display = this.display.bind(this);
@@ -153,17 +146,11 @@ class Select extends React.Component {
   display() {
     const selectValue = SelectUtil.value(this.props, this.state);
 
-    switch (this.props.variant) {
-      case Variants.TAG:
-      case Variants.MULTIPLE:
-        return selectValue.map(tag => (
-          <Tag value={tag} key={tag} onDeselect={this.handleDeselect}>
-            {SelectUtil.valueDisplay(this.props, tag)}
-          </Tag>
-        ));
-      default:
-        return SelectUtil.valueDisplay(this.props, selectValue);
-    }
+    return selectValue.map(tag => (
+      <Tag value={tag} key={tag} onDeselect={this.handleDeselect}>
+        {SelectUtil.valueDisplay(this.props, tag)}
+      </Tag>
+    ));
   }
 
   /**
@@ -198,12 +185,8 @@ class Select extends React.Component {
    * @param {ReactNode} option - The selected option.
    */
   handleSelect(value, option) {
-    this.handleChange(SelectUtil.select(this.props, this.state, value));
-
-    // Add new tags for uncontrolled components.
-    if (this.props.value === undefined && !SelectUtil.findByValue(this.props, this.state, value)) {
-      this.setState(prevState => ({ tags: [...prevState.tags, <Option key={value} display={value} value={value} />] }));
-    }
+    const newValue = [...SelectUtil.value(this.props, this.state), value];
+    this.handleChange(newValue);
 
     if (this.props.onSelect) {
       this.props.onSelect(value, option);
@@ -231,6 +214,7 @@ class Select extends React.Component {
     return (
       <Frame
         {...otherProps}
+        variant="multiple" // TODO: remove me
         data-terra-select
         value={SelectUtil.value(this.props, this.state)}
         display={this.display()}
@@ -240,22 +224,18 @@ class Select extends React.Component {
         required={required}
         totalOptions={SelectUtil.getTotalNumberOfOptions(children)}
         clearOptionDisplay={clearOptionDisplay}
-        dropdown={dropdownProps => (
-          <DropdownMenu {...dropdownProps}>
-            {this.state.tags}
-            {children}
-          </DropdownMenu>
-        )}
-      />
+      >
+        {children}
+      </Frame>
     );
   }
 }
 
-Select.Option = Option;
-Select.OptGroup = OptGroup;
-Select.propTypes = propTypes;
-Select.defaultProps = defaultProps;
-Select.contextTypes = contextTypes;
-Select.isSelect = true;
+Multiple.Option = Option;
+Multiple.OptGroup = OptGroup;
+Multiple.propTypes = propTypes;
+Multiple.defaultProps = defaultProps;
+Multiple.contextTypes = contextTypes;
+Multiple.isSelect = true;
 
-export default Select;
+export default Multiple;

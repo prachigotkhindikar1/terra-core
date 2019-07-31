@@ -13,10 +13,13 @@ class SelectUtil {
 
     if (value !== undefined) {
       return null;
-    } if (SelectUtil.allowsMultipleSelections(props)) {
+    }
+
+    if (SelectUtil.allowsMultipleSelections(props)) {
       // Flatten allows converting a string default into an array.
       return defaultValue ? [defaultValue].flatten() : [];
     }
+
     return (props.defaultValue !== undefined && props.defaultValue !== null) ? props.defaultValue : '';
   }
 
