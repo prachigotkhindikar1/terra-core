@@ -3,7 +3,14 @@ ChangeLog
 
 Unreleased
 ----------
+### Changed
 * WIP: splitting up terra-form-select
+
+### Changed
+* updated package.json test scripts
+
+### Changed
+* Update tests for dev-site v6
 
 5.25.0 - (July 30, 2019)
 ------------------
