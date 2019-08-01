@@ -5,7 +5,7 @@ import { FormattedMessage, injectIntl, intlShape } from 'react-intl';
 import uniqueid from 'lodash.uniqueid';
 import KeyCode from 'keycode-js';
 import Dropdown from '../_Dropdown';
-import Menu from '../_Menu';
+import Menu from './Menu';
 import FrameUtil from '../shared/_FrameUtil';
 import styles from '../_Frame.module.scss';
 
