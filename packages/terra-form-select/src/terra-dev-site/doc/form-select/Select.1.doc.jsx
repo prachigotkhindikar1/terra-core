@@ -1,41 +1,42 @@
 import React from 'react';
 import DocTemplate from 'terra-doc-template';
 import ReadMe from '../../../../docs/README.md';
+import { name } from '../../../../package.json';
 
 /* eslint-disable import/no-webpack-loader-syntax, import/first, import/extensions, import/no-unresolved, import/no-duplicates */
 // Component Source
-import OptionSrc from '!raw-loader!../../../shared/_Option';
-import OptGroupSrc from '!raw-loader!../../../shared/_OptGroup';
-import SelectSrc from '!raw-loader!../../../Select';
+import OptionSrc from '!!raw-loader!../../../../src/shared/_Option';
+import OptGroupSrc from '!raw-loader!../../../../src/shared/_OptGroup';
+import SelectSrc from '!raw-loader!../../../../src/Select';
 
 // Example Files
 import AllowClearExample from '../example/AllowClear';
-import AllowClearExampleSrc from '!raw-loader!../example/AllowClear';
+import AllowClearExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/AllowClear';
 import ControlledExample from '../example/Controlled';
-import ControlledExampleSrc from '!raw-loader!../example/Controlled';
+import ControlledExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Controlled';
 import ComboboxExample from '../example/Combobox';
-import ComboboxExampleSrc from '!raw-loader!../example/Combobox';
+import ComboboxExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Combobox';
 import DefaultExample from '../example/Default';
-import DefaultExampleSrc from '!raw-loader!../example/Default';
+import DefaultExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Default';
 import DisabledExample from '../example/Disabled';
-import DisabledExampleSrc from '!raw-loader!../example/Disabled';
+import DisabledExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Disabled';
 import InvalidExample from '../example/Invalid';
-import InvalidExampleSrc from '!raw-loader!../example/Invalid';
+import InvalidExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Invalid';
 import MaxHeightExample from '../example/MaxHeight';
-import MaxHeightExampleSrc from '!raw-loader!../example/MaxHeight';
+import MaxHeightExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/MaxHeight';
 import MultipleExample from '../example/Multiple';
-import MultipleExampleSrc from '!raw-loader!../example/Multiple';
+import MultipleExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Multiple';
 import OptGroupExample from '../example/OptGroup';
-import OptGroupExampleSrc from '!raw-loader!../example/OptGroup';
+import OptGroupExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/OptGroup';
 import SearchExample from '../example/Search';
-import SearchExampleSrc from '!raw-loader!../example/Search';
-import TagExample from '../example/Tag';
-import TagExampleSrc from '!raw-loader!../example/Tag';
+import SearchExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Search';
+import TagExample from '../example/Tag'; // eslint-disable-line
+import TagExampleSrc from '!raw-loader!../../../../src/terra-dev-site/doc/example/Tag'; // eslint-disable-line
 /* eslint-enable import/no-webpack-loader-syntax, import/first, import/extensions, import/no-unresolved, import/no-duplicates */
 
 const Index = () => (
   <DocTemplate
-    packageName="terra-form-select"
+    packageName={name}
     readme={ReadMe}
     srcPath="https://github.com/cerner/terra-core/tree/master/packages/terra-form-select"
     propsTables={[{
