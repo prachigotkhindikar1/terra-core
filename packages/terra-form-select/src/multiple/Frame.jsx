@@ -31,7 +31,7 @@ const propTypes = {
   /**
    * The select display.
    */
-  display: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  display: PropTypes.arrayOf(PropTypes.element),
   /**
    * Additional attributes to spread onto the dropdown. ( Style, ClassNames, etc.. )
    */
@@ -98,7 +98,7 @@ const propTypes = {
   /**
    * The select value.
    */
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  value: PropTypes.arrayOf(PropTypes.string),
 };
 
 const defaultProps = {
@@ -588,7 +588,6 @@ class Frame extends React.Component {
 
     const menuProps = {
       value,
-      variant: 'multiple', // TODO: remove me
       onDeselect,
       optionFilter,
       noResultContent,

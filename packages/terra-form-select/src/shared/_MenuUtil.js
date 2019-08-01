@@ -221,8 +221,9 @@ class MenuUtil {
     }
 
     if (state.searchValue === undefined) {
-      const selected = options.find(option => (
-        Array.isArray(value) ? MenuUtil.includes(value, option.props.value) : MenuUtil.isEqual(value, option.props.value)
+      const selected = options.find(option => (Array.isArray(value)
+        ? MenuUtil.includes(value, option.props.value)
+        : MenuUtil.isEqual(value, option.props.value)
       ));
       return selected === undefined ? options[0].props.value : selected.props.value;
     }

@@ -270,7 +270,7 @@ class Menu extends React.Component {
           isActive: option.props.value === this.state.active,
           isCheckable: false,
           isSelected: MenuUtil.isSelected(this.props.value, option.props.value),
-          variant: 'combobox',
+          variant: 'combobox', // TODO: remove me
           onMouseDown: () => { this.downOption = option; },
           onMouseUp: event => this.handleOptionClick(event, option),
           onMouseEnter: event => this.handleMouseEnter(event, option),

@@ -19,7 +19,7 @@ const propTypes = {
   /**
    * The default selected value.
    */
-  defaultValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  defaultValue: PropTypes.arrayOf(PropTypes.string),
   /**
    * Whether the select is disabled.
    */
@@ -89,7 +89,7 @@ const propTypes = {
   /**
    * The selected value.
    */
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
+  value: PropTypes.arrayOf(PropTypes.string),
 };
 
 const defaultProps = {
@@ -214,7 +214,6 @@ class Multiple extends React.Component {
     return (
       <Frame
         {...otherProps}
-        variant="multiple" // TODO: remove me
         data-terra-select
         value={SelectUtil.value(this.props, this.state)}
         display={this.display()}

@@ -8,7 +8,7 @@ import ClearOption from '../shared/_ClearOption';
 import NoResults from '../shared/_NoResults';
 import MenuUtil from '../shared/_MenuUtil';
 import SharedUtil from '../shared/_SharedUtil';
-import styles from './Menu.module.scss';
+import styles from '../_Menu.module.scss';
 
 const cx = classNames.bind(styles);
 
@@ -71,24 +71,24 @@ const contextTypes = {
   ),
 };
 
-function getActiveOptionFromProps(props, children, state) {
-  const { active } = state;
-  const { value } = props;
-  const options = MenuUtil.flatten(children, true);
-
-  if (options.length === 0) {
-    return null;
-  }
-
-  if (active && MenuUtil.findByValue(options, active)) {
-    return active;
-  }
-
-  const selected = options.find(option => MenuUtil.isEqual(value, option.props.value));
-  return selected === undefined ? options[0].props.value : selected.props.value;
-}
-
 class Menu extends React.Component {
+  static getActiveOptionFromProps(props, children, state) {
+    const { active } = state;
+    const { value } = props;
+    const options = MenuUtil.flatten(children, true);
+
+    if (options.length === 0) {
+      return null;
+    }
+
+    if (active && MenuUtil.findByValue(options, active)) {
+      return active;
+    }
+
+    const selected = options.find(option => MenuUtil.isEqual(value, option.props.value));
+    return selected === undefined ? options[0].props.value : selected.props.value;
+  }
+
   constructor(props) {
     super(props);
 
@@ -130,7 +130,7 @@ class Menu extends React.Component {
     return {
       children,
       hasNoResults,
-      active: getActiveOptionFromProps(props, children, state),
+      active: Menu.getActiveOptionFromProps(props, children, state),
     };
   }
 
@@ -270,7 +270,7 @@ class Menu extends React.Component {
           isActive: option.props.value === this.state.active,
           isCheckable: false,
           isSelected: MenuUtil.isSelected(this.props.value, option.props.value),
-          variant: 'default',
+          variant: 'default', // TODO: remove me
           onMouseDown: () => { this.downOption = option; },
           onMouseUp: event => this.handleOptionClick(event, option),
           onMouseEnter: event => this.handleMouseEnter(event, option),

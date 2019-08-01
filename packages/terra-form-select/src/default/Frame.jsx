@@ -8,7 +8,7 @@ import Dropdown from '../_Dropdown';
 import Menu from './Menu';
 import FrameUtil from '../shared/_FrameUtil';
 import SharedUtil from '../shared/_SharedUtil';
-import styles from './Frame.module.scss';
+import styles from '../_Frame.module.scss';
 
 const cx = classNames.bind(styles);
 
