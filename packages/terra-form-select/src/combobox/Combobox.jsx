@@ -113,12 +113,20 @@ const contextTypes = {
 
 
 class Combobox extends React.Component {
+  static defaultValue(props) {
+    if (props.value) {
+      return null;
+    }
+
+    return props.defaultValue || '';
+  }
+
   constructor(props) {
     super(props);
 
     this.state = {
       tags: [],
-      value: SelectUtil.defaultValue(props),
+      value: Combobox.defaultValue(props),
     };
 
     this.display = this.display.bind(this);

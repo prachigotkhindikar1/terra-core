@@ -31,7 +31,7 @@ const propTypes = {
   /**
    * The select display.
    */
-  display: PropTypes.arrayOf(PropTypes.element),
+  display: PropTypes.node,
   /**
    * Additional attributes to spread onto the dropdown. ( Style, ClassNames, etc.. )
    */

@@ -32,7 +32,7 @@ const propTypes = {
   /**
    * The select display.
    */
-  display: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  display: PropTypes.node,
   /**
    * Additional attributes to spread onto the dropdown. ( Style, ClassNames, etc.. )
    */

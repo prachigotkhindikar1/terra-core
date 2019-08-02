@@ -1,12 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames/bind';
-import { injectIntl, intlShape } from 'react-intl';
+import { FormattedMessage, injectIntl, intlShape } from 'react-intl';
 import uniqueid from 'lodash.uniqueid';
 import KeyCode from 'keycode-js';
+import Variants from '../shared/_variants';
 import Dropdown from '../_Dropdown';
-import Menu from './Menu';
+import Menu from '../_Menu';
 import FrameUtil from '../shared/_FrameUtil';
+import SharedUtil from '../shared/_SharedUtil';
 import styles from '../_Frame.module.scss';
 
 const cx = classNames.bind(styles);
@@ -51,6 +53,11 @@ const propTypes = {
    */
   maxHeight: PropTypes.number,
   /**
+   * The maximum number of options that can be selected. A value less than 2 will be ignored.
+   * Only applicable to variants allowing multiple selections (e.g.; `multiple`; `tag`).
+   */
+  maxSelectionCount: PropTypes.number,
+  /**
    * Content to display when no search results are found.
    */
   noResultContent: PropTypes.node,
@@ -93,7 +100,17 @@ const propTypes = {
   /**
    * The select value.
    */
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  value: PropTypes.arrayOf(PropTypes.string),
+  /**
+   * The behavior of the select.
+   */
+  variant: PropTypes.oneOf([
+    Variants.COMBOBOX,
+    Variants.DEFAULT,
+    Variants.MULTIPLE,
+    Variants.SEARCH,
+    Variants.TAG,
+  ]),
 };
 
 const defaultProps = {
@@ -101,6 +118,7 @@ const defaultProps = {
   disabled: false,
   dropdownAttrs: undefined,
   isInvalid: false,
+  maxSelectionCount: undefined,
   noResultContent: undefined,
   onDeselect: undefined,
   onSearch: undefined,
@@ -110,6 +128,7 @@ const defaultProps = {
   required: false,
   totalOptions: undefined,
   value: undefined,
+  variant: 'tag',
 };
 
 /* This rule can be removed when eslint-plugin-jsx-a11y is updated to ~> 6.0.0 */
@@ -128,6 +147,7 @@ class Frame extends React.Component {
     };
 
     this.ariaLabel = this.ariaLabel.bind(this);
+    this.ariaLabelledByIds = this.ariaLabelledByIds.bind(this);
     this.setInput = this.setInput.bind(this);
     this.getDisplay = this.getDisplay.bind(this);
     this.renderToggleButton = this.renderToggleButton.bind(this);
@@ -167,10 +187,10 @@ class Frame extends React.Component {
     this.input = input;
   }
 
-  getDisplay(ariaDescribedBy) {
+  getDisplay(displayId, placeholderId, ariaDescribedBy) {
     const { hasSearchChanged, searchValue } = this.state;
     const {
-      disabled, display, placeholder, required,
+      disabled, display, placeholder, required, variant,
     } = this.props;
 
     const inputAttrs = {
@@ -182,21 +202,48 @@ class Frame extends React.Component {
       onBlur: this.handleInputBlur,
       onMouseDown: this.handleInputMouseDown,
       'aria-label': this.ariaLabel(),
-      'aria-describedby': ariaDescribedBy,
+      'aria-describedby': (variant === Variants.TAG || variant === Variants.MULTIPLE) ? `${displayId} ${ariaDescribedBy}` : ariaDescribedBy,
       'aria-disabled': disabled,
       'aria-owns': this.state.isOpen ? 'terra-select-menu' : undefined,
       type: 'text',
-      className: cx('search-input'),
-      required,
-      'aria-required': required,
+      className: cx('search-input', { 'is-hidden': FrameUtil.shouldHideSearch(this.props, this.state) }),
     };
-    const value = hasSearchChanged ? searchValue : display;
 
-    return (
-      <div className={cx('content')}>
-        <input {...inputAttrs} value={value} />
-      </div>
-    );
+    const multipleInputAttrs = {
+      required: required && !display.length ? true : undefined,
+      'aria-required': required && !display.length ? 'required' : undefined,
+      ...inputAttrs,
+    };
+    const comboboxInputAttrs = { required, 'aria-required': required, ...inputAttrs };
+
+    switch (variant) {
+      case Variants.TAG:
+      case Variants.MULTIPLE:
+        return (
+          <ul className={cx('content')}>
+            {display && display.length > 0
+              ? (
+                <li>
+                  <ul id={displayId} className={cx('display-content')}>
+                    {display}
+                    <li className={cx('visually-hidden-component')}>
+                      <FormattedMessage id="Terra.form.select.selected" />
+                    </li>
+                  </ul>
+                </li>
+              ) : null
+            }
+            <li className={cx('search-wrapper')}>
+              <input {...multipleInputAttrs} value={searchValue} />
+            </li>
+          </ul>
+        );
+      case Variants.SEARCH:
+      case Variants.COMBOBOX:
+        return <div className={cx('content')}><input {...comboboxInputAttrs} value={hasSearchChanged ? searchValue : display} /></div>;
+      default:
+        return display ? <span id={displayId}>{display}</span> : <div id={placeholderId} className={cx('placeholder')}>{placeholder || '\xa0'}</div>;
+    }
   }
 
   /**
@@ -290,6 +337,25 @@ class Frame extends React.Component {
       return;
     }
 
+    /**
+     * When the select blur event is triggered with the default variant, this code checks if the focus
+     * is shifted to the select menu and if so, suppresses the rest of the blur handler to prevent
+     * the select menu from being closed.
+     */
+    if (this.props.variant === Variants.DEFAULT) {
+      // event.relatedTarget returns null in IE 10 / IE 11
+      if (event.relatedTarget == null) {
+        // IE 11 sets document.activeElement to the next focused element before the blur event is called
+        if (document.querySelector(this.selectMenu) === document.activeElement) {
+          return;
+        }
+      // Modern browsers support event.relatedTarget
+      } else if (document.querySelector(this.selectMenu) === event.relatedTarget) {
+        return;
+      }
+    }
+
+
     this.setState({ isFocused: false });
 
     this.closeDropdown();
@@ -319,6 +385,7 @@ class Frame extends React.Component {
    * @param {event} event - The onKeyDown event.
    */
   handleKeyDown(event) {
+    const { value } = this.props;
     const { keyCode, target } = event;
 
     if (keyCode === KeyCode.KEY_SPACE && target !== this.input) {
@@ -327,6 +394,8 @@ class Frame extends React.Component {
     } else if (keyCode === KeyCode.KEY_UP || keyCode === KeyCode.KEY_DOWN) {
       event.preventDefault();
       this.openDropdown(event);
+    } else if (keyCode === KeyCode.KEY_BACK_SPACE && FrameUtil.allowsMultipleSelections(this.props) && !this.state.searchValue && value.length > 0) {
+      this.props.onDeselect(value[value.length - 1]);
     } else if (keyCode === KeyCode.KEY_ESCAPE) {
       this.closeDropdown();
     }
@@ -337,9 +406,11 @@ class Frame extends React.Component {
    * @param {event} event - The mouse down event.
    */
   handleMouseDown(event) {
-    // Preventing default events stops the search input from losing focus.
-    // The default variant has no search input therefore the mouse down gives the component focus.
-    event.preventDefault();
+    if (this.props.variant !== Variants.DEFAULT) {
+      // Preventing default events stops the search input from losing focus.
+      // The default variant has no search input therefore the mouse down gives the component focus.
+      event.preventDefault();
+    }
     this.openDropdown(event);
   }
 
@@ -411,11 +482,14 @@ class Frame extends React.Component {
    * @param {ReactNode} option - The option that was selected.
    */
   handleSelect(value, option) {
+    const { isAbove } = this.state;
+    const isOpen = FrameUtil.allowsMultipleSelections(this.props);
+
     this.setState({
       searchValue: '',
       hasSearchChanged: false,
-      isOpen: false,
-      isAbove: false,
+      isOpen,
+      isAbove: isOpen ? isAbove : false,
     });
 
     if (this.props.onSelect) {
@@ -454,25 +528,57 @@ class Frame extends React.Component {
   }
 
   /**
+   * Determines compatible aria-labelledby IDs based on active variant
+   * Used with default, multiple, and tag variants to provide information about the label, displayed
+   * value and or the placeholder value.
+   */
+  ariaLabelledByIds(labelId, displayId, placeholderId) {
+    const { variant } = this.props;
+
+    let ariaLabelledBy = null;
+
+    // Safari is able to read the display/placeholder text, other browsers need help to provide that info to
+    // the accessibility tree used by screen readers
+    if (variant === Variants.DEFAULT) {
+      if (SharedUtil.isSafari()) {
+        ariaLabelledBy = `${labelId}`;
+      } else {
+        ariaLabelledBy = `${labelId} ${displayId} ${placeholderId}`;
+      }
+    }
+
+    return ariaLabelledBy;
+  }
+
+  /**
    * Determines compatible role attribute to apply to select based on active variant and disabled prop
    */
   role() {
-    const { disabled } = this.props;
+    const { variant, disabled } = this.props;
     // role="application" needed to allow JAWS to work correctly with the select and use our key event listeners
-    return disabled ? undefined : 'application';
+    let role = 'application';
+    if (disabled) { role = undefined; }
+    if (variant === Variants.DEFAULT) { role = 'combobox'; }
+    return role;
   }
 
   /**
    * Renders descriptive text related to the select component to be available for screen readers
    */
   renderDescriptionText() {
-    const { intl, totalOptions } = this.props;
+    const { intl, variant, totalOptions } = this.props;
 
     const listOfOptionsTxt = intl.formatMessage({ id: 'Terra.form.select.listOfTotalOptions' }, { total: totalOptions });
+    const defaultUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.defaultUsageGuidance' });
     const mobileUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.mobileUsageGuidance' });
+    const multiSelectUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.multiSelectUsageGuidance' });
     const searchUsageGuidanceTxt = intl.formatMessage({ id: 'Terra.form.select.searchUsageGuidance' });
 
     if ('ontouchstart' in window) {
+      if (variant === Variants.DEFAULT) {
+        return `${listOfOptionsTxt}`;
+      }
+
       if (this.state.isInputFocused) {
         return `${listOfOptionsTxt}`;
       }
@@ -480,7 +586,16 @@ class Frame extends React.Component {
       return `${listOfOptionsTxt} ${mobileUsageGuidanceTxt}`;
     }
 
-    return `${listOfOptionsTxt} ${searchUsageGuidanceTxt}`;
+    switch (variant) {
+      case Variants.TAG:
+      case Variants.MULTIPLE:
+        return `${listOfOptionsTxt} ${multiSelectUsageGuidanceTxt}`;
+      case Variants.SEARCH:
+      case Variants.COMBOBOX:
+        return `${listOfOptionsTxt} ${searchUsageGuidanceTxt}`;
+      default:
+        return `${listOfOptionsTxt} ${defaultUsageGuidanceTxt}`;
+    }
   }
 
   renderToggleButton() {
@@ -546,6 +661,7 @@ class Frame extends React.Component {
       intl,
       isInvalid,
       maxHeight,
+      maxSelectionCount,
       noResultContent,
       onDeselect,
       onSearch,
@@ -554,13 +670,14 @@ class Frame extends React.Component {
       placeholder,
       required,
       totalOptions,
+      variant,
       value,
       ...customProps
     } = this.props;
 
     const selectClasses = cx([
       'select',
-      'combobox',
+      variant,
       { 'is-above': this.state.isAbove },
       { 'is-disabled': disabled },
       { 'is-focused': this.state.isFocused },
@@ -570,12 +687,15 @@ class Frame extends React.Component {
     ]);
 
     const labelId = `terra-select-screen-reader-label-${uniqueid()}`;
+    const displayId = `terra-select-screen-reader-display-${uniqueid()}`;
+    const placeholderId = `terra-select-screen-reader-placeholder-${uniqueid()}`;
     const descriptionId = `terra-select-screen-reader-description-${uniqueid()}`;
     const customAriaDescribedbyIds = customProps['aria-describedby'];
     const ariaDescribedBy = customAriaDescribedbyIds ? `${descriptionId} ${customAriaDescribedbyIds}` : descriptionId;
 
     const menuProps = {
       value,
+      variant,
       onDeselect,
       optionFilter,
       noResultContent,
@@ -585,6 +705,7 @@ class Frame extends React.Component {
       searchValue: this.state.searchValue,
       input: this.input,
       select: this.select,
+      maxSelectionCount,
       clearOptionDisplay,
     };
 
@@ -592,11 +713,13 @@ class Frame extends React.Component {
       <div
         {...customProps}
         role={this.role()}
+        aria-required={variant === Variants.DEFAULT ? required : null}
         data-terra-select-combobox
         aria-controls={!disabled && this.state.isOpen ? 'terra-select-menu' : undefined}
         aria-disabled={!!disabled}
         aria-expanded={!!disabled && !!this.state.isOpen}
         aria-haspopup={!disabled ? 'true' : undefined}
+        aria-labelledby={this.ariaLabelledByIds(labelId, displayId, placeholderId)}
         aria-describedby={ariaDescribedBy}
         aria-owns={this.state.isOpen ? 'terra-select-menu' : undefined}
         className={selectClasses}
@@ -604,7 +727,7 @@ class Frame extends React.Component {
         onFocus={this.handleFocus}
         onKeyDown={this.handleKeyDown}
         onMouseDown={this.handleMouseDown}
-        tabIndex="-1"
+        tabIndex={FrameUtil.tabIndex(this.props)}
         ref={(select) => { this.select = select; }}
       >
         <div className={cx('visually-hidden-component')} hidden>
@@ -612,8 +735,8 @@ class Frame extends React.Component {
           <span id={labelId}>{this.ariaLabel()}</span>
           <span id={descriptionId}>{this.renderDescriptionText()}</span>
         </div>
-        <div className={cx('display')}>
-          {this.getDisplay(ariaDescribedBy)}
+        <div className={cx('display')} role={variant === Variants.DEFAULT ? 'textbox' : null}>
+          {this.getDisplay(displayId, placeholderId, ariaDescribedBy)}
         </div>
         {this.renderToggleButton()}
         <span
