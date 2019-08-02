@@ -130,7 +130,9 @@ class Menu extends React.Component {
       hasAddOption = true;
     }
 
-    if (MenuUtil.shouldShowClearOption(props, hasAddOption, hasNoResults)) {
+    if (MenuUtil.shouldShowClearOption({
+      clearOptionDisplay, searchValue, hasAddOption, hasNoResults,
+    })) {
       children.unshift(<ClearOption display={clearOptionDisplay} value="" />);
     }
 

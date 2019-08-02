@@ -310,11 +310,10 @@ class MenuUtil {
    * @param {boolean} hasNoResults - Indicates if the No Results content is shown in the menu.
    * @return {boolean} - True if the clear option should show.
    */
-  static shouldShowClearOption(props, hasAddOption, hasNoResults) {
-    const { clearOptionDisplay, searchValue, variant } = props;
-
-    if (variant !== Variants.TAG && variant !== Variants.MULTIPLE
-      && clearOptionDisplay && !hasNoResults && !hasAddOption
+  static shouldShowClearOption({
+    clearOptionDisplay, searchValue, hasAddOption, hasNoResults,
+  }) {
+    if (clearOptionDisplay && !hasNoResults && !hasAddOption
       && (searchValue === undefined || searchValue.length === 0)) {
       return true;
     }
