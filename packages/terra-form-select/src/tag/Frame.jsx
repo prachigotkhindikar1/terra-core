@@ -121,6 +121,20 @@ const defaultProps = {
 /* This rule can be removed when eslint-plugin-jsx-a11y is updated to ~> 6.0.0 */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 class Frame extends React.Component {
+  static shouldAddOptionOnBlur(props, state) {
+    const { onSelect } = props;
+    const { hasSearchChanged, searchValue } = state;
+
+    if (!onSelect || !hasSearchChanged) {
+      return false;
+    }
+
+    if (searchValue.trim().length > 0 && !FrameUtil.includes(props, searchValue)) {
+      return true;
+    }
+    return false;
+  }
+
   constructor(props) {
     super(props);
 
@@ -174,10 +188,12 @@ class Frame extends React.Component {
   }
 
   getDisplay(displayId, ariaDescribedBy) {
-    const { searchValue } = this.state;
+    const { searchValue, isFocused } = this.state;
     const {
-      disabled, display, placeholder, required,
+      disabled, display, placeholder, required, value,
     } = this.props;
+
+    const isHidden = !isFocused && value && value.length > 0;
 
     const inputAttrs = {
       disabled,
@@ -192,7 +208,7 @@ class Frame extends React.Component {
       'aria-disabled': disabled,
       'aria-owns': this.state.isOpen ? 'terra-select-menu' : undefined,
       type: 'text',
-      className: cx('search-input', { 'is-hidden': FrameUtil.shouldHideSearch(this.props, this.state) }),
+      className: cx('search-input', { 'is-hidden': isHidden }),
       required: required && !display.length ? true : undefined,
       'aria-required': required && !display.length ? 'required' : undefined,
     };
@@ -233,7 +249,7 @@ class Frame extends React.Component {
 
     // 'Tag' and 'Combobox' variants select the current search value when the component loses focus.
     const { searchValue } = this.state;
-    if (FrameUtil.shouldAddOptionOnBlur(this.props, this.state)) {
+    if (Frame.shouldAddOptionOnBlur(this.props, this.state)) {
       // NOTE: Since 'Combobox' does not allow blank strings to be created within the options dropdown,
       // a blank input string should be explicitly converted into an empty string. This ensures that
       // on blur, Combobox updates the search field to be an empty string when the user inputs a blank string.
