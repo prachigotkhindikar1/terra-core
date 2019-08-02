@@ -120,7 +120,7 @@ const contextTypes = {
 
 class Multiple extends React.Component {
   static defaultValue(props) {
-    if (props.value !== undefined) {
+    if (props.value) {
       return null;
     }
 

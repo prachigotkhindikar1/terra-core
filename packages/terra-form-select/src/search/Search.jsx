@@ -113,11 +113,19 @@ const contextTypes = {
 
 
 class Search extends React.Component {
+  static defaultValue(props) {
+    if (props.value) {
+      return null;
+    }
+
+    return props.defaultValue || '';
+  }
+
   constructor(props) {
     super(props);
 
     this.state = {
-      value: SelectUtil.defaultValue(props),
+      value: Search.defaultValue(props),
     };
 
     this.display = this.display.bind(this);
