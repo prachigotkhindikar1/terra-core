@@ -221,7 +221,6 @@ class TagSelect extends React.Component {
     return (
       <Frame
         {...otherProps}
-        variant="tag" // TODO: remove me
         data-terra-select
         value={SelectUtil.value(this.props, this.state)}
         display={this.display()}
