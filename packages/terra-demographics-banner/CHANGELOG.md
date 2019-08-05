@@ -3,6 +3,9 @@ Changelog
 
 Unreleased
 ----------
+### Changed
+* Added markdown version of props table to package
+
 ### Updated
 * updated jest snapshots
 
