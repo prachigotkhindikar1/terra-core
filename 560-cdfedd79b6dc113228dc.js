@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[560],{2975:function(e,l,t){"use strict";Object.defineProperty(l,"__esModule",{value:!0}),l.default=void 0;var a=u(t(0)),d=u(t(259));function u(e){return e&&e.__esModule?e:{default:e}}var n=function(){return a.default.createElement(d.default,{disabled:!0,label:"T-shirt size",placeholder:"Select a size",selectId:"select-field",defaultValue:"small"},a.default.createElement(d.default.Option,{value:"small",display:"Small"}))};l.default=n}}]);
+//# sourceMappingURL=560-cdfedd79b6dc113228dc.js.map

@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///packages/terra-form-textarea/lib/terra-dev-site/doc/example/FormTextareaDocCommon.module.scss"],"names":[],"mappings":"AAAA,gDAEI,WAAY","file":"103-69123abf23df68b3b3e5.css","sourcesContent":[":local {\n  .textarea {\n    resize: none;\n  }\n}\n"]}

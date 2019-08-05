@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[506],{2842:function(e,t,u){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default=void 0;var n=o(u(0)),a=o(u(122));function o(e){return e&&e.__esModule?e:{default:e}}t.default=function(){return n.default.createElement(a.default,{id:"user-avatar",alt:"user",color:"one"})}}}]);
+//# sourceMappingURL=506-bc1aa3c381a19a97d927.js.map

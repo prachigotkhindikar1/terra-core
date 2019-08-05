@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///packages/terra-i18n/lib/terra-dev-site/test/i18n/DefaultI18n.module.scss"],"names":[],"mappings":"AAAA,yFAGI,gBAAiB,CAHrB,8CAOI,UAAW","file":"419-2392d65a7fcb17e446ba.css","sourcesContent":[":local {\n  .weighted-text,\n  .fallback-message {\n    font-weight: bold;\n  }\n\n  .fallback-message {\n    color: #f00;\n  }\n}\n"]}

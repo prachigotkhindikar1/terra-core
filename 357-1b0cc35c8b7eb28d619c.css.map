@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///packages/terra-markdown/lib/terra-dev-site/doc/markdown/Markdown.module.scss"],"names":[],"mappings":"AAAA,2CAEI,WAAY,CACZ,aAAc,CAEd,iBAAkB,CALtB,iDAII,YACkB","file":"357-1b0cc35c8b7eb28d619c.css","sourcesContent":[":local {\n  .markdown-wrapper {\n    height: 100%;\n    overflow: auto;\n    padding: 15px;\n    position: relative;\n  }\n}\n"]}

@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///packages/terra-responsive-element/lib/terra-dev-site/test/responsive-element/FixedSize.module.scss"],"names":[],"mappings":"AAAA,sDAEI,YAAa","file":"362-5949ad882a2f86900ca6.css","sourcesContent":[":local {\n  .responsive-element-wrapper {\n    width: 1000px;\n  }\n}\n"]}

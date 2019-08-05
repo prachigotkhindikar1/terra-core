@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[524],{2859:function(e,t,u){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default=void 0;var n=a(u(0)),o=a(u(52));function a(e){return e&&e.__esModule?e:{default:e}}var c=function(){return n.default.createElement(o.default,{id:"compactButton",text:"Compact",isCompact:!0})};t.default=c}}]);
+//# sourceMappingURL=524-ca3722131ad896d945a5.js.map

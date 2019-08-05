@@ -1,0 +1,2 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[480],{2799:function(e,t,n){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default=void 0;var u=o(n(0)),a=o(n(165));function o(e){return e&&e.__esModule?e:{default:e}}t.default=function(){return u.default.createElement(a.default,{start:"FakeLink Start Action"})}}}]);
+//# sourceMappingURL=480-686ee4c2586f69d7e406.js.map
