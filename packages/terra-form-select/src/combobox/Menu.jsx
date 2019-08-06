@@ -86,15 +86,15 @@ const contextTypes = {
   ),
 };
 
-function shouldAllowFreeText(props, children) {
-  const { searchValue, value } = props;
-
-  const option = MenuUtil.findByDisplay(children, searchValue);
-  const included = MenuUtil.isEqual(value, searchValue);
-  return !option && !included && (searchValue || '').trim().length > 0;
-}
-
 class Menu extends React.Component {
+  static shouldAllowFreeText(props, children) {
+    const { searchValue, value } = props;
+
+    const option = MenuUtil.findByDisplay(children, searchValue);
+    const included = MenuUtil.isEqual(value, searchValue);
+    return !option && !included && (searchValue || '').trim().length > 0;
+  }
+
   constructor(props) {
     super(props);
 
@@ -125,7 +125,7 @@ class Menu extends React.Component {
     let children = MenuUtil.filter(props.children, props.searchValue, props.optionFilter);
     children = MenuUtil.updateSelectionState(children, props);
 
-    if (shouldAllowFreeText(props, children)) {
+    if (Menu.shouldAllowFreeText(props, children)) {
       children.push(<AddOption value={searchValue} />);
       hasAddOption = true;
     }

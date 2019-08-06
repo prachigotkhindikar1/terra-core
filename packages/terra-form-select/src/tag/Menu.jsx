@@ -4,13 +4,10 @@ import classNames from 'classnames/bind';
 import { polyfill } from 'react-lifecycles-compat';
 import { injectIntl, intlShape } from 'react-intl';
 import KeyCode from 'keycode-js';
-import Variants from '../shared/_variants';
 import AddOption from '../shared/_AddOption';
 import ClearOption from '../shared/_ClearOption';
 import MaxSelection from '../shared/_MaxSelection';
-import NoResults from '../shared/_NoResults';
 import MenuUtil from '../shared/_MenuUtil';
-import SharedUtil from '../shared/_SharedUtil';
 import styles from '../_Menu.module.scss';
 
 const cx = classNames.bind(styles);
@@ -45,10 +42,6 @@ const propTypes = {
    */
   maxSelectionCount: PropTypes.number,
   /**
-   * Content to display when no results are found.
-   */
-  noResultContent: PropTypes.node,
-  /**
    * Callback function triggered when an option is deselected.
    */
   onDeselect: PropTypes.func,
@@ -67,17 +60,7 @@ const propTypes = {
   /**
    * The value of the selected options.
    */
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.array]),
-  /**
-   * The behavior of the select.
-   */
-  variant: PropTypes.oneOf([
-    Variants.COMBOBOX,
-    Variants.DEFAULT,
-    Variants.MULTIPLE,
-    Variants.SEARCH,
-    Variants.TAG,
-  ]).isRequired,
+  value: PropTypes.arrayOf(PropTypes.string),
   /**
    * @private Visually hidden component designed to feed screen reader text to read.
    */
@@ -89,7 +72,6 @@ const defaultProps = {
   input: undefined,
   clearOptionDisplay: undefined,
   maxSelectionCount: undefined,
-  noResultContent: undefined,
   onDeselect: undefined,
   optionFilter: undefined,
   searchValue: undefined,
@@ -106,13 +88,29 @@ const contextTypes = {
 };
 
 class Menu extends React.Component {
+  static isMaxSelectionReached(props) {
+    const { maxSelectionCount, value } = props;
+
+    if (maxSelectionCount !== undefined && value && value.length >= maxSelectionCount) {
+      return true;
+    }
+
+    return false;
+  }
+
+  static shouldAllowFreeText(props, children) {
+    const { searchValue, value } = props;
+
+    const option = MenuUtil.findByDisplay(children, searchValue);
+    const included = MenuUtil.isEqual(value, searchValue);
+    return !option && !included && (searchValue || '').trim().length > 0;
+  }
+
   constructor(props) {
     super(props);
 
     this.state = {};
 
-    this.searchString = '';
-    this.clearSearch = this.clearSearch.bind(this);
     this.clearScrollTimeout = this.clearScrollTimeout.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleMouseEnter = this.handleMouseEnter.bind(this);
@@ -128,32 +126,29 @@ class Menu extends React.Component {
    */
   static getDerivedStateFromProps(props, state) {
     const {
-      clearOptionDisplay, maxSelectionCount, searchValue, noResultContent,
+      clearOptionDisplay, maxSelectionCount, searchValue,
     } = props;
 
     let children;
-    let hasNoResults = false;
+    const hasNoResults = false;
     let hasMaxSelection = false;
     let hasAddOption = false;
 
-    if (searchValue && searchValue.length > 0 && MenuUtil.isMaxSelectionReached(props)) {
+    if (searchValue && searchValue.length > 0 && Menu.isMaxSelectionReached(props)) {
       children = [(<MaxSelection value={maxSelectionCount} />)];
       hasMaxSelection = true;
     } else {
       children = MenuUtil.filter(props.children, props.searchValue, props.optionFilter);
       children = MenuUtil.updateSelectionState(children, props);
 
-      if (MenuUtil.shouldAllowFreeText(props, children)) {
+      if (Menu.shouldAllowFreeText(props, children)) {
         children.push(<AddOption value={searchValue} />);
         hasAddOption = true;
       }
 
-      if (MenuUtil.shouldShowNoResults(props, children)) {
-        children.push(<NoResults noResultContent={noResultContent} value={searchValue} />);
-        hasNoResults = true;
-      }
-
-      if (MenuUtil.shouldShowClearOption(props, hasAddOption, hasNoResults)) {
+      if (MenuUtil.shouldShowClearOption({
+        clearOptionDisplay, searchValue, hasAddOption, hasNoResults,
+      })) {
         children.unshift(<ClearOption display={clearOptionDisplay} value="" />);
       }
     }
@@ -186,25 +181,9 @@ class Menu extends React.Component {
   }
 
   componentWillUnmount() {
-    this.clearSearch();
     this.clearScrollTimeout();
     if (this.state.closedViaKeyEvent) {
-      if (this.props.variant === Variants.DEFAULT) {
-        this.props.select.focus();
-        if (SharedUtil.isSafari()) {
-          /**
-           * Shifting focus back to the select specifically
-           * when VoiceOver is on will sometimes trigger VO to shift focus
-           * randomly to the root of document or the skip to main link
-           * instead of the select and then break VoiceOver usage when navigating the
-           * select options on subsequent opening of select
-           * Refocusing on select seems to seems to mitigate this VO bug.
-           */
-          setTimeout(() => {
-            this.props.select.focus();
-          }, 300);
-        }
-      } else {
+      if (this.props.input) {
         this.props.input.focus();
       }
     }
@@ -212,11 +191,7 @@ class Menu extends React.Component {
   }
 
   isActiveSelected() {
-    if (Array.isArray(this.props.value)) {
-      return this.props.value.includes(this.state.active);
-    }
-
-    return this.state.active === this.props.value;
+    return this.props.value.includes(this.state.active);
   }
 
   updateNoResultsScreenReader() {
@@ -225,25 +200,15 @@ class Menu extends React.Component {
     }
 
     this.liveRegionTimeOut = setTimeout(() => {
-      const {
-        hasMaxSelection,
-        hasNoResults,
-      } = this.state;
-
-      const {
-        intl,
-        visuallyHiddenComponent,
-        searchValue,
-      } = this.props;
+      const { hasMaxSelection } = this.state;
+      const { intl, visuallyHiddenComponent } = this.props;
 
       // Race condition can occur between calling timeout and unmounting this component.
       if (!visuallyHiddenComponent || !visuallyHiddenComponent.current) {
         return;
       }
 
-      if (hasNoResults) {
-        visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.noResults' }, { text: searchValue });
-      } else if (hasMaxSelection) {
+      if (hasMaxSelection) {
         visuallyHiddenComponent.current.innerText = intl.formatMessage({ id: 'Terra.form.select.maxSelectionOption' }, { text: this.props.maxSelectionCount });
       } else {
         visuallyHiddenComponent.current.innerText = '';
@@ -254,7 +219,6 @@ class Menu extends React.Component {
   updateCurrentActiveScreenReader() {
     const {
       intl,
-      variant,
       clearOptionDisplay,
       visuallyHiddenComponent,
     } = this.props;
@@ -279,13 +243,10 @@ class Menu extends React.Component {
     }
 
     // Detects if option is an "Add option" and provides accessible text
-    if (variant === Variants.COMBOBOX || variant === Variants.TAG) {
-      const active = this.menu.querySelector('[data-select-active]');
-
-      if (active && active.hasAttribute('data-terra-select-add-option')) {
-        const display = active.querySelector("[class*='display']").innerText;
-        visuallyHiddenComponent.current.innerText = display;
-      }
+    const active = this.menu.querySelector('[data-select-active]');
+    if (active && active.hasAttribute('data-terra-select-add-option')) {
+      const display = active.querySelector("[class*='display']").innerText;
+      visuallyHiddenComponent.current.innerText = display;
     }
 
     const element = MenuUtil.findByValue(this.props.children, this.state.active);
@@ -300,15 +261,6 @@ class Menu extends React.Component {
         visuallyHiddenComponent.current.innerText = element.props.display;
       }
     }
-  }
-
-  /**
-   * Clears the default variant keyboard search.
-   */
-  clearSearch() {
-    this.searchString = '';
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = null;
   }
 
   /**
@@ -330,9 +282,9 @@ class Menu extends React.Component {
         return React.cloneElement(option, {
           id: `terra-select-option-${option.props.value}`,
           isActive: option.props.value === this.state.active,
-          isCheckable: MenuUtil.allowsMultipleSelections(this.props.variant),
+          isCheckable: true,
           isSelected: MenuUtil.isSelected(this.props.value, option.props.value),
-          variant: this.props.variant,
+          variant: 'tag', // TODO: remove me
           onMouseDown: () => { this.downOption = option; },
           onMouseUp: event => this.handleOptionClick(event, option),
           onMouseEnter: event => this.handleMouseEnter(event, option),
@@ -357,7 +309,6 @@ class Menu extends React.Component {
       onSelect,
       onDeselect,
       value,
-      variant,
     } = this.props;
 
     const selectedTxt = intl.formatMessage({ id: 'Terra.form.select.selected' });
@@ -373,12 +324,9 @@ class Menu extends React.Component {
       this.scrollTimeout = setTimeout(this.clearScrollTimeout, 500);
       this.setState({ active: MenuUtil.findNext(children, active) });
       this.updateCurrentActiveScreenReader();
-    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && (!MenuUtil.allowsMultipleSelections(variant) || !MenuUtil.includes(value, active))) {
+    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && !MenuUtil.includes(value, active)) {
       event.preventDefault();
 
-      if (!MenuUtil.allowsMultipleSelections(variant)) {
-        this.setState({ closedViaKeyEvent: true });
-      }
       const option = MenuUtil.findByValue(children, active);
       // Handles communicating the case where a clear option is selected to screen readers
       if (this.props.clearOptionDisplay) {
@@ -388,43 +336,13 @@ class Menu extends React.Component {
         }
       }
       // Handles communicating the case where a regular option is selected to screen readers.
-      /*
-        Detecting if browser is not Safari before updating aria-live as there is some odd behaivor
-        with VoiceOver on desktop, that causes the selected option to be read twice when this is
-        is added to aria-live container.
-        When we shift focus back to select, VoiceOver automatically reads the display text.
-        Using aria-hidden on the display does not prevent VO from reading the display text and so it
-        results in reading the display text followed by reading the aria-live message which is
-        the display text + 'selected'
-        */
-      if (SharedUtil.isSafari()) {
-        if (variant === Variants.MULTIPLE || variant === Variants.TAG) {
-          this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
-        }
-      } else {
-        this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
-      }
+      this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${selectedTxt}`;
       onSelect(option.props.value, option);
-    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && MenuUtil.allowsMultipleSelections(variant) && MenuUtil.includes(value, active)) {
+    } else if (keyCode === KeyCode.KEY_RETURN && active !== null && MenuUtil.includes(value, active)) {
       event.preventDefault();
       const option = MenuUtil.findByValue(children, active);
       // Handles communicating the case where a regular option is Unselected to screen readers.
-      /*
-        Detecting if browser is not Safari before updating aria-live as there is some odd behaivor
-        with VoiceOver on desktop, that causes the selected option to be read twice when this is
-        is added to aria-live container.
-        When we shift focus back to select, VoiceOver automatically reads the display text.
-        Using aria-hidden on the display does not prevent VO from reading the display text and so it
-        results in reading the display text followed by reading the aria-live message which is
-        the display text + 'Unselected'
-        */
-      if (SharedUtil.isSafari()) {
-        if (variant === Variants.MULTIPLE || variant === Variants.TAG) {
-          this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
-        }
-      } else {
-        this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
-      }
+      this.props.visuallyHiddenComponent.current.innerText = `${option.props.display} ${unselectedTxt}`;
       onDeselect(option.props.value, option);
     } else if (keyCode === KeyCode.KEY_HOME) {
       event.preventDefault();
@@ -432,11 +350,6 @@ class Menu extends React.Component {
     } else if (keyCode === KeyCode.KEY_END) {
       event.preventDefault();
       this.setState({ active: MenuUtil.findLast(children) });
-    } else if (variant === Variants.DEFAULT && keyCode >= 48 && keyCode <= 90) {
-      this.searchString = this.searchString.concat(String.fromCharCode(keyCode));
-      clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(this.clearSearch, 500);
-      this.setState(prevState => ({ active: MenuUtil.findWithStartString(prevState.children, this.searchString) || active }));
     }
   }
 
@@ -451,16 +364,14 @@ class Menu extends React.Component {
     }
 
     const {
-      select, input, onDeselect, onSelect, value, variant,
+      input, onDeselect, onSelect, value,
     } = this.props;
 
-    if (MenuUtil.allowsMultipleSelections(variant) && MenuUtil.includes(value, option.props.value)) {
+    if (MenuUtil.includes(value, option.props.value)) {
       onDeselect(option.props.value, option);
     } else {
       onSelect(option.props.value, option);
-      if (variant === Variants.DEFAULT) {
-        select.focus();
-      } else {
+      if (input) {
         input.focus();
       }
     }

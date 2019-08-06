@@ -56,10 +56,6 @@ const propTypes = {
    */
   maxSelectionCount: PropTypes.number,
   /**
-   * Content to display when no search results are found.
-   */
-  noResultContent: PropTypes.node,
-  /**
    * Callback function triggered when an option is deselected.
    */
   onDeselect: PropTypes.func,
@@ -107,7 +103,6 @@ const defaultProps = {
   dropdownAttrs: undefined,
   isInvalid: false,
   maxSelectionCount: undefined,
-  noResultContent: undefined,
   onDeselect: undefined,
   onSearch: undefined,
   onSelect: undefined,
@@ -584,7 +579,6 @@ class Frame extends React.Component {
       isInvalid,
       maxHeight,
       maxSelectionCount,
-      noResultContent,
       onDeselect,
       onSearch,
       onSelect,
@@ -615,10 +609,8 @@ class Frame extends React.Component {
 
     const menuProps = {
       value,
-      variant: 'tag', // TODO: remove me
       onDeselect,
       optionFilter,
-      noResultContent,
       visuallyHiddenComponent: this.visuallyHiddenComponent,
       onSelect: this.handleSelect,
       onRequestClose: this.closeDropdown,

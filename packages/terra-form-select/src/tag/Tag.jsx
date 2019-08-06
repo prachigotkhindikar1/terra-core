@@ -43,10 +43,6 @@ const propTypes = {
    */
   maxSelectionCount: PropTypes.number,
   /**
-   * Content to display when no results are found.
-   */
-  noResultContent: PropTypes.node,
-  /**
    * Callback function triggered when the select loses focus. function(event)
    */
   onBlur: PropTypes.func,
@@ -100,7 +96,6 @@ const defaultProps = {
   dropdownAttrs: undefined,
   isInvalid: false,
   maxSelectionCount: undefined,
-  noResultContent: undefined,
   onChange: undefined,
   onDeselect: undefined,
   onSearch: undefined,

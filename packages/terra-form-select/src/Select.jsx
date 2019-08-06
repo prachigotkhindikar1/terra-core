@@ -146,8 +146,10 @@ function Select(props) {
       const { maxSelectionCount, ...searchProps } = otherProps;
       return <Search {...searchProps} />;
     }
-    case Variants.TAG:
-      return <Tag {...otherProps} />;
+    case Variants.TAG: {
+      const { noResultContent, ...tagProps } = otherProps;
+      return <Tag {...tagProps} />;
+    }
     case Variants.DEFAULT:
     default: {
       const {
